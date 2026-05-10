@@ -1,0 +1,55 @@
+import i18n from '../app/i18n';
+
+/**
+ * Locale-aware date formatting.
+ */
+export const formatDate = (date: string | Date, options?: Intl.DateTimeFormatOptions) => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat(i18n.language, options || {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(d);
+};
+
+/**
+ * Locale-aware time formatting.
+ */
+export const formatTime = (date: string | Date) => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat(i18n.language, {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d);
+};
+
+/**
+ * Locale-aware number formatting.
+ */
+export const formatNumber = (num: number, options?: Intl.NumberFormatOptions) => {
+  return new Intl.NumberFormat(i18n.language, options).format(num);
+};
+
+/**
+ * Locale-aware percentage formatting.
+ */
+export const formatPercent = (num: number) => {
+  return new Intl.NumberFormat(i18n.language, {
+    style: 'percent',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  }).format(num / 100);
+};
+
+/**
+ * Locale-aware file size formatting.
+ */
+export const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const value = parseFloat((bytes / Math.pow(k, i)).toFixed(1));
+  
+  return `${formatNumber(value)} ${sizes[i]}`;
+};

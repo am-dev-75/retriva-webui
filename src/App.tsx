@@ -1,0 +1,42 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './app/providers/ThemeProvider';
+import { UserProvider } from './app/providers/UserProvider';
+import { AppShell } from './app/layout/AppShell';
+
+import { ChatContainer } from './features/chat/components/ChatContainer';
+import { KBList } from './features/knowledge-bases/components/KBList';
+import { UploadPanel } from './features/ingestion/components/UploadPanel';
+import { DocumentList } from './features/documents/components/DocumentList';
+import { ArtifactList } from './features/artifacts/components/ArtifactList';
+import { SettingsPage } from './features/settings/components/SettingsPage';
+
+// Lazy load or placeholder features
+const ChatPage = () => <ChatContainer />;
+const KBPage = () => <KBList />;
+const DocumentsPage = () => <DocumentList />;
+const IngestionPage = () => <UploadPanel />;
+const ArtifactsPage = () => <ArtifactList />;
+const SettingsPagePlaceholder = () => <SettingsPage />;
+
+function App() {
+  return (
+    <ThemeProvider>
+      <UserProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<AppShell />}>
+              <Route index element={<ChatPage />} />
+              <Route path="kb" element={<KBPage />} />
+              <Route path="documents" element={<DocumentsPage />} />
+              <Route path="ingestion" element={<IngestionPage />} />
+              <Route path="artifacts" element={<ArtifactsPage />} />
+              <Route path="settings" element={<SettingsPagePlaceholder />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </UserProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;
