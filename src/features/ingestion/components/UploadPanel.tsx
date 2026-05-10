@@ -18,6 +18,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, Folder, X, File, CheckCircle, AlertCircle } from 'lucide-react';
 import { MetadataEditor, MetadataField } from '../../metadata/components/MetadataEditor';
+import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
 import './Ingestion.css';
 
 interface PendingFile {
@@ -30,6 +31,7 @@ interface PendingFile {
 
 export const UploadPanel: React.FC = () => {
   const { t } = useTranslation();
+  const { selectedKbIds } = useKnowledgeBase();
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [globalMetadata, setGlobalMetadata] = useState<MetadataField[]>([]);
@@ -68,7 +70,10 @@ export const UploadPanel: React.FC = () => {
   };
 
   const handleUpload = () => {
-    // Mock upload logic
+    // For ingestion, we use the primary (first) selected KB
+    const targetKbId = selectedKbIds[0] || 'default';
+    console.log(`Ingesting files to Knowledge Base: ${targetKbId}`);
+    
     setPendingFiles((prev) => 
       prev.map(f => ({ ...f, status: 'uploading' }))
     );

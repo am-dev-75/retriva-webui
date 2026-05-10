@@ -17,6 +17,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './app/providers/ThemeProvider';
 import { UserProvider } from './app/providers/UserProvider';
+import { KnowledgeBaseProvider } from './app/providers/KnowledgeBaseProvider';
 import { AppShell } from './app/layout/AppShell';
 
 import { ChatContainer } from './features/chat/components/ChatContainer';
@@ -38,18 +39,20 @@ function App() {
   return (
     <ThemeProvider>
       <UserProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<AppShell />}>
-              <Route index element={<ChatPage />} />
-              <Route path="kb" element={<KBPage />} />
-              <Route path="documents" element={<DocumentsPage />} />
-              <Route path="ingestion" element={<IngestionPage />} />
-              <Route path="artifacts" element={<ArtifactsPage />} />
-              <Route path="settings" element={<SettingsPagePlaceholder />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+        <KnowledgeBaseProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<AppShell />}>
+                <Route index element={<ChatPage />} />
+                <Route path="kb" element={<KBPage />} />
+                <Route path="documents" element={<DocumentsPage />} />
+                <Route path="ingestion" element={<IngestionPage />} />
+                <Route path="artifacts" element={<ArtifactsPage />} />
+                <Route path="settings" element={<SettingsPagePlaceholder />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </KnowledgeBaseProvider>
       </UserProvider>
     </ThemeProvider>
   );

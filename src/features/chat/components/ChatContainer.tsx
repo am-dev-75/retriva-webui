@@ -20,10 +20,12 @@ import { Send, User, Bot, Paperclip, Mic } from 'lucide-react';
 import { Message } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
 import { CONFIG } from '../../../app/config';
+import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
 import './Chat.css';
 
 export const ChatContainer: React.FC = () => {
   const { t } = useTranslation();
+  const { selectedKbIds } = useKnowledgeBase();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -50,8 +52,7 @@ export const ChatContainer: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Use 'default' as a placeholder kbId since we don't have a selector yet
-      const response = await gatewayClient.sendChatMessage('default', userMessage.content);
+      const response = await gatewayClient.sendChatMessage(selectedKbIds, userMessage.content);
       setMessages(prev => [...prev, response]);
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -60,7 +61,7 @@ export const ChatContainer: React.FC = () => {
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: `This is a mock response because the Gateway is not reachable. I received: "${userMessage.content}"`,
+          content: `This is a mock response because the Gateway is not reachable. I'm searching across ${selectedKbIds.length} Knowledge Base(s): ${selectedKbIds.join(', ')}.`,
           timestamp: new Date().toISOString(),
         };
         setMessages(prev => [...prev, assistantMessage]);

@@ -25,7 +25,7 @@
   },
   "chat": {
     "welcome": "Welcome to Retriva",
-    "empty_state": "Select a Knowledge Base and start a conversation.",
+    "empty_state": "Start a conversation with selected Knowledge Base(s).",
     "placeholder": "Ask a question...",
     "input_hint": "Press Enter to send, Shift+Enter for new line.",
     "attachment": "Attach file",

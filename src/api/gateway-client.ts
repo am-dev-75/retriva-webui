@@ -46,11 +46,11 @@ class GatewayClient {
   }
 
   // Chat
-  async sendChatMessage(kbId: string, message: string): Promise<Message> {
+  async sendChatMessage(kbIds: string[], message: string): Promise<Message> {
     const response = await fetch(`${this.baseUrl}/gateway/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kb_id: kbId, message }),
+      body: JSON.stringify({ kb_ids: kbIds, message }),
     });
 
     if (!response.ok) throw new Error('Chat failed');
