@@ -20,6 +20,7 @@ export interface Message {
   content: string;
   timestamp: string;
   citations?: Citation[];
+  feedback?: 'positive' | 'negative' | null;
 }
 
 export interface Citation {
