@@ -15,7 +15,7 @@
  */
 
 export const CONFIG = {
-  GATEWAY_BASE_URL: import.meta.env.VITE_RETRIVA_GATEWAY_BASE_URL || 'http://localhost:8080',
+  GATEWAY_BASE_URL: import.meta.env.VITE_RETRIVA_GATEWAY_BASE_URL || 'http://localhost:8002',
   APP_NAME: import.meta.env.VITE_APP_NAME || 'Retriva',
   ENABLE_AUTH: import.meta.env.VITE_ENABLE_AUTH === 'true',
   ENABLE_ARTIFACTS: import.meta.env.VITE_ENABLE_ARTIFACTS !== 'false',
