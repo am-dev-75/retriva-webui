@@ -1,6 +1,26 @@
 # Retriva WebUI
 
-Native web interface for Retriva.
+Native web interface for Retriva. It requires the Retriva Gateway service running to operate. See https://github.com/am-dev-75/retriva for more details.
+
+## Quick Start
+
+### 1. Install dependencies
+```bash
+npm install
+```
+
+### 2. Configure environment (Optional)
+Create a `.env` file in the root directory to override default settings (see `.env.example`):
+```env
+VITE_RETRIVA_GATEWAY_BASE_URL=http://localhost:8002
+```
+
+### 3. Run the development server
+```bash
+npm run dev
+```
+
+The application will be available at `http://localhost:5173`.
 
 ## Implemetation notes
 
