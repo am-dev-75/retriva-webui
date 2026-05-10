@@ -16,7 +16,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Square, User, Bot, Paperclip, Mic, ThumbsUp, ThumbsDown, RotateCcw } from 'lucide-react';
+import { Send, Square, User, Bot, Paperclip, Mic, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy } from 'lucide-react';
 import { Message } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
 import { CONFIG } from '../../../app/config';
@@ -116,6 +116,29 @@ export const ChatContainer: React.FC = () => {
     // gatewayClient.sendFeedback(messageId, feedback);
   }, []);
 
+  const copyToClipboard = useCallback(async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  }, []);
+
+  const getPrecedingQuery = useCallback((msgIndex: number): string | null => {
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        return messages[i].content;
+      }
+    }
+    return null;
+  }, [messages]);
+
   const hasUserMessages = messages.some(msg => msg.role === 'user');
 
   return (
@@ -127,7 +150,7 @@ export const ChatContainer: React.FC = () => {
             <p>{t('chat.empty_state')}</p>
           </div>
         ) : (
-          messages.map((msg) => (
+          messages.map((msg, index) => (
             <div key={msg.id} className={`message-item ${msg.role}`}>
               <div className="message-avatar">
                 {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
@@ -170,24 +193,55 @@ export const ChatContainer: React.FC = () => {
                   <div className="message-time">
                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
-                  {msg.role === 'assistant' && (
-                    <div className="message-actions">
+                  <div className="message-actions">
+                    {msg.role === 'user' && (
                       <button
-                        className={`action-btn feedback-btn ${msg.feedback === 'positive' ? 'active positive' : ''}`}
-                        onClick={() => handleFeedback(msg.id, 'positive')}
-                        title={t('chat.feedback_positive')}
+                        className="action-btn copy-btn"
+                        onClick={() => copyToClipboard(msg.content)}
+                        title={t('chat.copy_query')}
                       >
-                        <ThumbsUp size={14} />
+                        <Copy size={14} />
                       </button>
-                      <button
-                        className={`action-btn feedback-btn ${msg.feedback === 'negative' ? 'active negative' : ''}`}
-                        onClick={() => handleFeedback(msg.id, 'negative')}
-                        title={t('chat.feedback_negative')}
-                      >
-                        <ThumbsDown size={14} />
-                      </button>
-                    </div>
-                  )}
+                    )}
+                    {msg.role === 'assistant' && (
+                      <>
+                        <button
+                          className="action-btn copy-btn"
+                          onClick={() => copyToClipboard(msg.content)}
+                          title={t('chat.copy_response')}
+                        >
+                          <Copy size={14} />
+                        </button>
+                        <button
+                          className="action-btn copy-btn"
+                          onClick={() => {
+                            const query = getPrecedingQuery(index);
+                            const text = query
+                              ? `Q: ${query}\n\nA: ${msg.content}`
+                              : msg.content;
+                            copyToClipboard(text);
+                          }}
+                          title={t('chat.copy_qa')}
+                        >
+                          <ClipboardCopy size={14} />
+                        </button>
+                        <button
+                          className={`action-btn feedback-btn ${msg.feedback === 'positive' ? 'active positive' : ''}`}
+                          onClick={() => handleFeedback(msg.id, 'positive')}
+                          title={t('chat.feedback_positive')}
+                        >
+                          <ThumbsUp size={14} />
+                        </button>
+                        <button
+                          className={`action-btn feedback-btn ${msg.feedback === 'negative' ? 'active negative' : ''}`}
+                          onClick={() => handleFeedback(msg.id, 'negative')}
+                          title={t('chat.feedback_negative')}
+                        >
+                          <ThumbsDown size={14} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

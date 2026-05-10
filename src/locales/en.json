@@ -32,6 +32,9 @@
     "voice_input": "Voice input (Disabled)",
     "stop": "Stop generating",
     "repeat": "Repeat last message",
+    "copy_query": "Copy query",
+    "copy_response": "Copy response",
+    "copy_qa": "Copy query and response",
     "feedback_positive": "Good response",
     "feedback_negative": "Poor response",
     "interrupted": "Response generation was interrupted."
