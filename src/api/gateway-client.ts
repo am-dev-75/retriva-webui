@@ -71,6 +71,35 @@ class GatewayClient {
     });
   }
 
+  // Ingestion
+  async createBatch(metadata?: Record<string, any>): Promise<{ batch_id: string, status: string }> {
+    return this.request<{ batch_id: string, status: string }>('/gateway/ingestion/batches', {
+      method: 'POST',
+      body: JSON.stringify({ metadata }),
+    });
+  }
+
+  async uploadFileToBatch(batchId: string, file: File, sourcePath: string, metadata?: Record<string, any>): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('source_path', sourcePath);
+    if (metadata) {
+      formData.append('user_metadata', JSON.stringify(metadata));
+    }
+
+    const response = await fetch(`${this.baseUrl}/gateway/ingestion/batches/${batchId}/files`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) throw new Error('Upload failed');
+    return response.json();
+  }
+
+  async getBatchStatus(batchId: string): Promise<any> {
+    return this.request<any>(`/gateway/ingestion/batches/${batchId}`);
+  }
+
   // Documents
   async getDocuments(kbId?: string): Promise<Document[]> {
     const query = kbId ? `?kb_id=${kbId}` : '';

@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { Upload, Folder, X, File, CheckCircle, AlertCircle } from 'lucide-react';
 import { MetadataEditor, MetadataField } from '../../metadata/components/MetadataEditor';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
+import { gatewayClient } from '../../../api/gateway-client';
 import './Ingestion.css';
 
 interface PendingFile {
@@ -69,23 +70,56 @@ export const UploadPanel: React.FC = () => {
     setPendingFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     // For ingestion, we use the primary (first) selected KB
     const targetKbId = selectedKbIds[0] || 'default';
     console.log(`Ingesting files to Knowledge Base: ${targetKbId}`);
     
+    if (pendingFiles.length === 0) return;
+
     setPendingFiles((prev) => 
-      prev.map(f => ({ ...f, status: 'uploading' }))
+      prev.map(f => ({ ...f, status: 'uploading', progress: 0 }))
     );
 
-    // Simulate progress
-    pendingFiles.forEach((f, index) => {
-      setTimeout(() => {
-        setPendingFiles((prev) => 
-          prev.map(p => p.id === f.id ? { ...p, status: 'completed', progress: 100 } : p)
-        );
-      }, (index + 1) * 1000);
-    });
+    try {
+      // 1. Convert metadata to a Record
+      const metadataObj: Record<string, string> = { kb_id: targetKbId };
+      globalMetadata.forEach(m => {
+        if (m.key && m.value) metadataObj[m.key] = m.value;
+      });
+
+      // 2. Create the batch
+      const { batch_id } = await gatewayClient.createBatch(metadataObj);
+      console.log(`Created batch ${batch_id}`);
+
+      // 3. Upload files sequentially or in parallel
+      // We'll do it sequentially here for simpler error tracking, 
+      // but in a real app, you might want to chunk parallel uploads.
+      for (const fileItem of pendingFiles) {
+        if (fileItem.status === 'completed') continue; // Skip already done
+
+        try {
+          // Simulate some progress before upload finishes
+          setPendingFiles(prev => prev.map(p => p.id === fileItem.id ? { ...p, progress: 50 } : p));
+          
+          await gatewayClient.uploadFileToBatch(
+            batch_id, 
+            fileItem.file, 
+            fileItem.path,
+            // You could pass file-specific metadata here
+          );
+          
+          setPendingFiles(prev => prev.map(p => p.id === fileItem.id ? { ...p, status: 'completed', progress: 100 } : p));
+        } catch (err) {
+          console.error(`Failed to upload ${fileItem.file.name}:`, err);
+          setPendingFiles(prev => prev.map(p => p.id === fileItem.id ? { ...p, status: 'error' } : p));
+        }
+      }
+
+    } catch (error) {
+      console.error('Failed to create ingestion batch:', error);
+      setPendingFiles(prev => prev.map(f => f.status === 'uploading' ? { ...f, status: 'error' } : f));
+    }
   };
 
   return (
