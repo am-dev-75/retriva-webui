@@ -137,9 +137,32 @@ export const ChatContainer: React.FC = () => {
                 {msg.citations && msg.citations.length > 0 && (
                   <div className="citations-list">
                     {msg.citations.map((cite) => (
-                      <span key={cite.id} className="citation-tag" title={cite.text}>
+                      <button
+                        key={cite.id}
+                        className="citation-tag"
+                        title={cite.text}
+                        onClick={() => {
+                          const win = window.open('', '_blank');
+                          if (win) {
+                            win.document.write(`<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>[${cite.id}] ${cite.filename}</title>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1.5rem; line-height: 1.7; color: #e2e8f0; background: #0f172a; }
+  h1 { font-size: 1.25rem; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 0.75rem; }
+  pre { white-space: pre-wrap; word-wrap: break-word; background: #1e293b; padding: 1.5rem; border-radius: 8px; border: 1px solid #334155; font-size: 0.9rem; }
+</style>
+</head><body>
+<h1>[${cite.id}] ${cite.filename}${cite.page ? ` — Page ${cite.page}` : ''}</h1>
+<pre>${cite.text?.replace(/</g, '&lt;').replace(/>/g, '&gt;') || 'No text available.'}</pre>
+</body></html>`);
+                            win.document.close();
+                          }
+                        }}
+                      >
                         [{cite.id}] {cite.filename}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 )}

@@ -103,10 +103,18 @@
   font-size: 0.75rem;
   color: var(--color-primary);
   background-color: var(--color-surface-muted);
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: var(--radius-sm);
-  cursor: help;
+  cursor: pointer;
   border: 1px solid var(--color-border);
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.citation-tag:hover {
+  background-color: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
 }
 
 /* Message Footer (time + actions) */
