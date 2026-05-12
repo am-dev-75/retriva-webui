@@ -46,6 +46,12 @@
   gap: var(--spacing-sm);
 }
 
+.logo-img {
+  height: 32px;
+  width: auto;
+  border-radius: var(--radius-sm);
+}
+
 .logo-text {
   font-size: 1.25rem;
   font-weight: 700;

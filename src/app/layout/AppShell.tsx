@@ -78,6 +78,7 @@ export const AppShell: React.FC = () => {
       <aside className={`app-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="app-logo">
+            <img src="/logo.jpg" alt="Retriva Logo" className="logo-img" />
             <span className="logo-text">{CONFIG.APP_NAME}</span>
           </div>
           <button className="mobile-close" onClick={() => setIsMobileMenuOpen(false)}>
