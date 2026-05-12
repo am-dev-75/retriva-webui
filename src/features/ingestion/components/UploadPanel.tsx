@@ -16,8 +16,9 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, Folder, X, File, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Folder, X, File, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { MetadataEditor, MetadataField } from '../../metadata/components/MetadataEditor';
+import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
 import { gatewayClient } from '../../../api/gateway-client';
 import './Ingestion.css';
@@ -36,6 +37,7 @@ export const UploadPanel: React.FC = () => {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [globalMetadata, setGlobalMetadata] = useState<MetadataField[]>([]);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   const addFiles = (files: FileList | null) => {
     if (!files) return;
@@ -68,6 +70,11 @@ export const UploadPanel: React.FC = () => {
 
   const removeFile = (id: string) => {
     setPendingFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const handleClear = () => {
+    setPendingFiles([]);
+    setIsClearModalOpen(false);
   };
 
   const handleUpload = async () => {
@@ -171,9 +178,19 @@ export const UploadPanel: React.FC = () => {
           <div className="panel-header">
             <h3>{t('ingestion.pending_uploads', { count: pendingFiles.length })}</h3>
             {pendingFiles.length > 0 && (
-              <button className="btn btn-primary btn-sm" onClick={handleUpload}>
-                {t('ingestion.upload_all')}
-              </button>
+              <div className="btn-group">
+                <button 
+                  className="btn btn-ghost btn-sm" 
+                  onClick={() => setIsClearModalOpen(true)}
+                  title={t('ingestion.clear_list')}
+                >
+                  <Trash2 size={16} />
+                  {t('ingestion.clear_list')}
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={handleUpload}>
+                  {t('ingestion.upload_all')}
+                </button>
+              </div>
             )}
           </div>
 
@@ -220,6 +237,14 @@ export const UploadPanel: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={handleClear}
+        title={t('ingestion.clear_list')}
+        message={t('ingestion.confirm_clear')}
+      />
     </div>
   );
 };

@@ -58,6 +58,8 @@
     "select_folder": "Select Folder",
     "pending_uploads": "Pending Uploads ({{count}})",
     "upload_all": "Upload All",
+    "clear_list": "Clear List",
+    "confirm_clear": "Are you sure you want to clear the list of documents to be uploaded?",
     "no_files": "No files selected"
   },
   "documents": {
