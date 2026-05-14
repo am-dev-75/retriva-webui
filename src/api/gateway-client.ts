@@ -53,7 +53,7 @@ class GatewayClient {
   async sendChatMessage(
     kbIds: string[], 
     message: string, 
-    metadataFilter?: MetadataFilter[], 
+    metadataFilters?: MetadataFilter[], 
     metadataFilterMode?: MetadataFilterMode,
     signal?: AbortSignal
   ): Promise<Message> {
@@ -63,7 +63,7 @@ class GatewayClient {
       body: JSON.stringify({ 
         kb_ids: kbIds, 
         message,
-        metadata_filter: metadataFilter,
+        metadata_filters: metadataFilters,
         metadata_filter_mode: metadataFilterMode
       }),
       signal,
@@ -124,7 +124,7 @@ class GatewayClient {
   async searchDocuments(
     kbIds: string[], 
     query: string, 
-    metadataFilter?: MetadataFilter[], 
+    metadataFilters?: MetadataFilter[], 
     metadataFilterMode?: MetadataFilterMode
   ): Promise<Document[]> {
     return this.request<Document[]>('/gateway/documents/search', {
@@ -132,7 +132,7 @@ class GatewayClient {
       body: JSON.stringify({
         kb_ids: kbIds,
         query,
-        metadata_filter: metadataFilter,
+        metadata_filters: metadataFilters,
         metadata_filter_mode: metadataFilterMode
       }),
     });
