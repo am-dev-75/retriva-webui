@@ -317,3 +317,61 @@
   margin-top: var(--spacing-xs);
   text-align: center;
 }
+
+.composer-action.active {
+  color: var(--color-primary);
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.chat-filters-panel {
+  padding: 0 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-xs);
+  padding: 0 var(--spacing-xs);
+}
+
+.filter-status-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+}
+
+.status-badge.soft {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.status-badge.hard {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-badge.inactive {
+  opacity: 0.6;
+}
+
+.input-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: right;
+  margin: 0;
+}

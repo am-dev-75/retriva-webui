@@ -16,11 +16,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Square, User, Bot, Paperclip, Mic, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy } from 'lucide-react';
+import { Send, Square, User, Bot, Paperclip, Mic, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter } from 'lucide-react';
 import { Message } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
 import { CONFIG } from '../../../app/config';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
+import { MetadataFilterManager } from '../../metadata/components/MetadataFilter';
+import { useMetadataFilters } from '../../metadata/hooks/useMetadataFilters';
 import './Chat.css';
 
 export const ChatContainer: React.FC = () => {
@@ -29,6 +31,14 @@ export const ChatContainer: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const { 
+    filters: activeFilters, 
+    mode: filterMode, 
+    updateFilters, 
+    activeCount 
+  } = useMetadataFilters();
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -57,7 +67,13 @@ export const ChatContainer: React.FC = () => {
     abortControllerRef.current = controller;
 
     try {
-      const response = await gatewayClient.sendChatMessage(selectedKbIds, userMessage.content, controller.signal);
+      const response = await gatewayClient.sendChatMessage(
+        selectedKbIds, 
+        userMessage.content, 
+        activeFilters.length > 0 ? activeFilters : undefined,
+        filterMode,
+        controller.signal
+      );
       setMessages(prev => [...prev, { ...response, feedback: null }]);
     } catch (error: any) {
       if (error?.name === 'AbortError') {
@@ -263,8 +279,25 @@ export const ChatContainer: React.FC = () => {
         )}
       </div>
 
+      {showFilters && (
+        <div className="chat-filters-panel">
+          <MetadataFilterManager 
+            onFilterChange={updateFilters}
+            initialFilters={activeFilters}
+            initialMode={filterMode}
+          />
+        </div>
+      )}
+
       <div className="chat-input-area">
         <div className="composer-container">
+          <button 
+            className={`composer-action ${showFilters ? 'active' : ''}`} 
+            title={t('chat.filters')}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter size={20} />
+          </button>
           <button className="composer-action" title={t('chat.attachment')}>
             <Paperclip size={20} />
           </button>
@@ -321,7 +354,19 @@ export const ChatContainer: React.FC = () => {
             </button>
           )}
         </div>
-        <p className="input-hint">{t('chat.input_hint')}</p>
+        <div className="input-footer">
+          <div className="filter-status-indicator">
+            {activeCount > 0 ? (
+              <span className={`status-badge ${filterMode}`}>
+                <Filter size={12} />
+                {activeCount} filters active ({filterMode === 'soft' ? 'Ranking Hints' : 'Strict Matching'})
+              </span>
+            ) : (
+              <span className="status-badge inactive">No metadata filters</span>
+            )}
+          </div>
+          <p className="input-hint">{t('chat.input_hint')}</p>
+        </div>
       </div>
     </div>
   );

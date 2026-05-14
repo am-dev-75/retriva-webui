@@ -18,30 +18,62 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Filter, FileText, Trash2 } from 'lucide-react';
 import { Document } from '../../../api/types';
+import { gatewayClient } from '../../../api/gateway-client';
 import { formatFileSize, formatDate } from '../../../lib/formatting';
+import { MetadataFilterManager } from '../../metadata/components/MetadataFilter';
+import { useMetadataFilters } from '../../metadata/hooks/useMetadataFilters';
+import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
+import { Info } from 'lucide-react';
 import './Documents.css';
 
 export const DocumentList: React.FC = () => {
   const { t } = useTranslation();
+  const { selectedKbIds } = useKnowledgeBase();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const { 
+    filters: activeFilters, 
+    mode: filterMode, 
+    updateFilters, 
+    setFilterMode 
+  } = useMetadataFilters();
+
+  const loadDocuments = async () => {
+    setIsLoading(true);
+    try {
+      // If we have a search term or filters, use search API
+      if (searchTerm || activeFilters.length > 0) {
+        const results = await gatewayClient.searchDocuments(
+          selectedKbIds,
+          searchTerm,
+          activeFilters.length > 0 ? activeFilters : undefined,
+          filterMode
+        );
+        setDocuments(results);
+      } else {
+        // Otherwise just get all documents (optionally filtered by first selected KB)
+        const kbId = selectedKbIds.length > 0 ? selectedKbIds[0] : undefined;
+        const results = await gatewayClient.getDocuments(kbId);
+        setDocuments(results);
+      }
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+      setDocuments([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Mocking
-    setTimeout(() => {
-      setDocuments([
-        { id: '1', kb_id: '1', filename: 'CompanyPolicy.pdf', size: 102456, content_type: 'application/pdf', metadata: {}, ingestion_status: 'completed', created_at: new Date().toISOString() },
-        { id: '2', kb_id: '1', filename: 'Benefits.docx', size: 45678, content_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', metadata: {}, ingestion_status: 'completed', created_at: new Date().toISOString() },
-        { id: '3', kb_id: '2', filename: 'Spec_A1.pdf', size: 2345678, content_type: 'application/pdf', metadata: { version: '1.0' }, ingestion_status: 'completed', created_at: new Date().toISOString() },
-      ]);
-      setIsLoading(false);
-    }, 500);
-  }, []);
+    loadDocuments();
+  }, [selectedKbIds]); // Reload when KBs change
 
-  const filteredDocs = documents.filter(doc => 
-    doc.filename.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    loadDocuments();
+  };
 
   return (
     <div className="documents-container">
@@ -53,7 +85,7 @@ export const DocumentList: React.FC = () => {
       </header>
 
       <div className="table-controls">
-        <div className="search-bar">
+        <form className="search-bar" onSubmit={handleSearch}>
           <Search size={18} className="search-icon" />
           <input 
             type="text" 
@@ -61,12 +93,30 @@ export const DocumentList: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-        </div>
-        <button className="btn btn-ghost">
+        </form>
+        <button 
+          className={`btn btn-ghost ${showFilters ? 'active' : ''}`}
+          onClick={() => setShowFilters(!showFilters)}
+        >
           <Filter size={18} />
           {t('common.filter')}
         </button>
       </div>
+
+      {showFilters && (
+        <div className="documents-filters-panel">
+          <MetadataFilterManager 
+            onFilterChange={updateFilters}
+            initialFilters={activeFilters}
+            initialMode={filterMode}
+          />
+          <div className="filter-actions">
+            <button className="btn btn-primary btn-sm" onClick={loadDocuments}>
+              Apply Filters
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="table-wrapper">
         <table className="data-table">
@@ -87,12 +137,35 @@ export const DocumentList: React.FC = () => {
                   <td colSpan={6}><div className="shimmer" /></td>
                 </tr>
               ))
-            ) : filteredDocs.length === 0 ? (
+            ) : documents.length === 0 ? (
               <tr>
-                <td colSpan={6} className="empty-row">No documents found</td>
+                <td colSpan={6} className="empty-row">
+                  <div className="empty-state-content">
+                    <p>No documents found</p>
+                    {filterMode === 'hard' && activeFilters.length > 0 && (
+                      <div className="empty-suggestion">
+                        <Info size={16} />
+                        <span>
+                          No results match your <strong>strict</strong> filters. 
+                          <button 
+                            className="suggestion-link"
+                            onClick={() => {
+                              setFilterMode('soft');
+                              // loadDocuments will be triggered by useEffect if we add dependency, 
+                              // or we can call it manually here.
+                              setTimeout(loadDocuments, 0);
+                            }}
+                          >
+                            Try switching to "Ranking Hints"
+                          </button>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </td>
               </tr>
             ) : (
-              filteredDocs.map((doc) => (
+              documents.map((doc) => (
                 <tr key={doc.id}>
                   <td className="filename-cell">
                     <FileText size={16} />

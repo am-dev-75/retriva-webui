@@ -37,7 +37,8 @@
     "copy_qa": "Copy query and response",
     "feedback_positive": "Good response",
     "feedback_negative": "Poor response",
-    "interrupted": "Response generation was interrupted."
+    "interrupted": "Response generation was interrupted.",
+    "filters": "Metadata Filters"
   },
   "kb": {
     "title": "Knowledge Bases",

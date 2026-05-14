@@ -16,10 +16,14 @@
 
 import { CONFIG } from '../app/config';
 import { 
-  Message, 
-  KnowledgeBase, 
+  Message,
+  KnowledgeBase,
   Document, 
-  Artifact 
+  Artifact,
+  MetadataSchemaResponse,
+  MetadataValuesResponse,
+  MetadataFilter,
+  MetadataFilterMode
 } from './types';
 
 class GatewayClient {
@@ -46,11 +50,22 @@ class GatewayClient {
   }
 
   // Chat
-  async sendChatMessage(kbIds: string[], message: string, signal?: AbortSignal): Promise<Message> {
+  async sendChatMessage(
+    kbIds: string[], 
+    message: string, 
+    metadataFilter?: MetadataFilter[], 
+    metadataFilterMode?: MetadataFilterMode,
+    signal?: AbortSignal
+  ): Promise<Message> {
     const response = await fetch(`${this.baseUrl}/gateway/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kb_ids: kbIds, message }),
+      body: JSON.stringify({ 
+        kb_ids: kbIds, 
+        message,
+        metadata_filter: metadataFilter,
+        metadata_filter_mode: metadataFilterMode
+      }),
       signal,
     });
 
@@ -104,6 +119,32 @@ class GatewayClient {
   async getDocuments(kbId?: string): Promise<Document[]> {
     const query = kbId ? `?kb_id=${kbId}` : '';
     return this.request<Document[]>(`/gateway/documents${query}`);
+  }
+
+  async searchDocuments(
+    kbIds: string[], 
+    query: string, 
+    metadataFilter?: MetadataFilter[], 
+    metadataFilterMode?: MetadataFilterMode
+  ): Promise<Document[]> {
+    return this.request<Document[]>('/gateway/documents/search', {
+      method: 'POST',
+      body: JSON.stringify({
+        kb_ids: kbIds,
+        query,
+        metadata_filter: metadataFilter,
+        metadata_filter_mode: metadataFilterMode
+      }),
+    });
+  }
+
+  // Metadata
+  async getMetadataSchema(): Promise<MetadataSchemaResponse> {
+    return this.request<MetadataSchemaResponse>('/gateway/metadata/schema');
+  }
+
+  async getMetadataValues(field: string): Promise<MetadataValuesResponse> {
+    return this.request<MetadataValuesResponse>(`/gateway/metadata/values?field=${field}`);
   }
 
   // Artifacts

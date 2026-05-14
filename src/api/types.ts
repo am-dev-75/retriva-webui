@@ -66,3 +66,26 @@ export interface Artifact {
   download_url?: string;
   created_at: string;
 }
+
+export type MetadataFilterMode = 'soft' | 'hard';
+
+export interface MetadataField {
+  name: string;
+  type: 'string' | 'integer' | 'float' | 'boolean';
+  description?: string;
+}
+
+export interface MetadataSchemaResponse {
+  fields: MetadataField[];
+}
+
+export interface MetadataValuesResponse {
+  field: string;
+  values: any[];
+}
+
+export interface MetadataFilter {
+  field: string;
+  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'exists';
+  value: any;
+}
