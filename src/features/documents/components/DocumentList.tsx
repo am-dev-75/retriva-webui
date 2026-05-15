@@ -69,7 +69,15 @@ const toTagList = (value: unknown): string[] => {
 const getUserProvidedTags = (doc: DocumentView): string[] => {
   const metadata = doc.metadata || {};
 
+  // All fields in metadata except system-internal ones
+  const systemKeys = ['kb_id', 'user_provided', 'user_provided_tags', 'user_metadata', 'ingestion_status', 'created_at', 'ingestion_timestamp'];
+  
+  const autoTags = Object.entries(metadata)
+    .filter(([key]) => !systemKeys.includes(key))
+    .map(([k, v]) => `${k}: ${v}`);
+
   return [
+    ...autoTags,
     ...toTagList(metadata.user_provided_tags),
     ...toTagList(metadata.user_provided?.tags),
     ...toTagList(metadata.user_provided),
@@ -80,10 +88,13 @@ const getUserProvidedTags = (doc: DocumentView): string[] => {
 const getMetadataTags = (doc: DocumentView): string[] => {
   if (!doc.metadata) return [];
 
+  // System tags only
+  const systemKeys = ['kb_id'];
+  
   return Object.entries(doc.metadata)
     .filter(([key, value]) => {
       if (value === undefined || value === null || value === '') return false;
-      return !['user_provided', 'user_provided_tags', 'user_metadata'].includes(key);
+      return systemKeys.includes(key);
     })
     .map(([key, value]) => `${key}: ${String(value)}`);
 };
@@ -104,7 +115,9 @@ const getDocumentCreatedAt = (doc: DocumentView): string => {
     metadata.ingested_at ||
     metadata.ingestion_completed_at ||
     doc.created_at ||
-    metadata.created_at
+    metadata.created_at ||
+    doc.ingestion_timestamp ||
+    metadata.ingestion_timestamp
   );
 
   if (!dateValue) return FALLBACK_VALUE;
@@ -260,24 +273,30 @@ export const DocumentList: React.FC = () => {
               documents.map((doc) => (
                 <tr key={doc.id}>
                   <td className="filename-cell">
-                    <FileText size={16} />
-                    <span>{getDocumentDisplayName(doc)}</span>
+                    <div className="filename-cell-content">
+                      <FileText size={16} />
+                      <span>{getDocumentDisplayName(doc)}</span>
+                    </div>
                   </td>
                   <td>{doc.kb_id}</td>
                   <td>{formatFileSize(doc.size)}</td>
                   <td className="tags-cell">
-                    {getMetadataTags(doc).length > 0 ? getMetadataTags(doc).map((tag) => (
-                      <span key={tag} className="tag-badge" title={tag}>
-                        {tag}
-                      </span>
-                    )) : <span className="muted-value">{FALLBACK_VALUE}</span>}
+                    <div className="tags-cell-content">
+                      {getMetadataTags(doc).length > 0 ? getMetadataTags(doc).map((tag) => (
+                        <span key={tag} className="tag-badge" title={tag}>
+                          {tag}
+                        </span>
+                      )) : <span className="muted-value">{FALLBACK_VALUE}</span>}
+                    </div>
                   </td>
                   <td className="tags-cell">
-                    {getUserProvidedTags(doc).length > 0 ? getUserProvidedTags(doc).map((tag) => (
-                      <span key={tag} className="tag-badge" title={tag}>
-                        {tag}
-                      </span>
-                    )) : <span className="muted-value">{FALLBACK_VALUE}</span>}
+                    <div className="tags-cell-content">
+                      {getUserProvidedTags(doc).length > 0 ? getUserProvidedTags(doc).map((tag) => (
+                        <span key={tag} className="tag-badge" title={tag}>
+                          {tag}
+                        </span>
+                      )) : <span className="muted-value">{FALLBACK_VALUE}</span>}
+                    </div>
                   </td>
                   <td>
                     <span className={`status-badge ${doc.ingestion_status}`}>
