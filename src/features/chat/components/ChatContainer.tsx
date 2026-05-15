@@ -390,6 +390,7 @@ export const ChatContainer: React.FC = () => {
             )}
           </div>
           <p className="input-hint">{t('chat.input_hint')}</p>
+          <p className="chat-disclaimer">{t('chat.disclaimer')}</p>
         </div>
       </div>
     </div>

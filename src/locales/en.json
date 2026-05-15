@@ -40,7 +40,8 @@
     "interrupted": "Response generation was interrupted.",
     "filters": "Metadata Filters",
     "title": "Chat",
-    "subtitle": "Interact with your knowledge bases using natural language."
+    "subtitle": "Interact with your knowledge bases using natural language.",
+    "disclaimer": "AI-generated content may be incorrect."
   },
   "kb": {
     "title": "Knowledge Bases",
@@ -69,6 +70,7 @@
     "title": "Documents",
     "subtitle": "Browse and manage your ingested documents.",
     "search_placeholder": "Search documents...",
+    "case_sensitive": "Case Sensitive",
     "table": {
       "filename": "Filename",
       "kb": "KB",

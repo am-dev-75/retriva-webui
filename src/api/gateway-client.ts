@@ -126,7 +126,8 @@ class GatewayClient {
     kbIds: string[], 
     query: string, 
     metadataFilters?: MetadataFilter[], 
-    metadataFilterMode?: MetadataFilterMode
+    metadataFilterMode?: MetadataFilterMode,
+    caseSensitive?: boolean
   ): Promise<Document[]> {
     const response = await this.request<any>('/gateway/documents/search', {
       method: 'POST',
@@ -134,7 +135,8 @@ class GatewayClient {
         kb_ids: kbIds,
         query,
         metadata_filters: metadataFilters,
-        metadata_filter_mode: metadataFilterMode
+        metadata_filter_mode: metadataFilterMode,
+        case_sensitive: caseSensitive
       }),
     });
     return Array.isArray(response) ? response : (response.documents || []);

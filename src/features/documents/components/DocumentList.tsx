@@ -16,7 +16,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, FileText, Trash2 } from 'lucide-react';
+import { Search, Filter, FileText, Trash2, ChevronDown } from 'lucide-react';
 import { Document } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
 import { formatFileSize, formatDate } from '../../../lib/formatting';
@@ -71,7 +71,7 @@ const getUserProvidedTags = (doc: DocumentView): string[] => {
 
   // All fields in metadata except system-internal ones
   const systemKeys = ['kb_id', 'user_provided', 'user_provided_tags', 'user_metadata', 'ingestion_status', 'created_at', 'ingestion_timestamp'];
-  
+
   const autoTags = Object.entries(metadata)
     .filter(([key]) => !systemKeys.includes(key))
     .map(([k, v]) => `${k}: ${v}`);
@@ -90,7 +90,7 @@ const getMetadataTags = (doc: DocumentView): string[] => {
 
   // System tags only
   const systemKeys = ['kb_id'];
-  
+
   return Object.entries(doc.metadata)
     .filter(([key, value]) => {
       if (value === undefined || value === null || value === '') return false;
@@ -106,24 +106,33 @@ const getDocumentDisplayName = (doc: DocumentView): string => {
   return FALLBACK_VALUE;
 };
 
-const getDocumentCreatedAt = (doc: DocumentView): string => {
+const getRawIngestionTimestamp = (doc: DocumentView): string | number | undefined => {
   const metadata = doc.metadata || {};
-
-  const dateValue = normalizeDateValue(
+  return (
+    doc.ingestion_timestamp ||
+    metadata.ingestion_timestamp ||
     doc.ingested_at ||
     doc.ingestion_completed_at ||
     metadata.ingested_at ||
     metadata.ingestion_completed_at ||
     doc.created_at ||
-    metadata.created_at ||
-    doc.ingestion_timestamp ||
-    metadata.ingestion_timestamp
+    metadata.created_at
   );
+};
 
-  if (!dateValue) return FALLBACK_VALUE;
+const formatDateShort = (timestamp?: string | number): string => {
+  const normalized = normalizeDateValue(timestamp);
+  if (!normalized) return FALLBACK_VALUE;
 
   try {
-    return formatDate(dateValue);
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) return FALLBACK_VALUE;
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
   } catch {
     return FALLBACK_VALUE;
   }
@@ -136,12 +145,33 @@ export const DocumentList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const { 
-    filters: activeFilters, 
-    mode: filterMode, 
-    updateFilters, 
-    setFilterMode 
+  const [caseSensitive, setCaseSensitive] = useState(false);
+  const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
+  const {
+    filters: activeFilters,
+    mode: filterMode,
+    updateFilters,
+    setFilterMode
   } = useMetadataFilters();
+
+  const formatFullTimestamp = (timestamp?: string | number) => {
+    const normalized = normalizeDateValue(timestamp);
+    if (!normalized) return 'N/A';
+    
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) return 'N/A';
+    
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    
+    const year = date.getUTCFullYear();
+    const month = pad(date.getUTCMonth() + 1);
+    const day = pad(date.getUTCDate());
+    const hours = pad(date.getUTCHours());
+    const minutes = pad(date.getUTCMinutes());
+    const seconds = pad(date.getUTCSeconds());
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC`;
+  };
 
   const loadDocuments = async () => {
     setIsLoading(true);
@@ -152,7 +182,8 @@ export const DocumentList: React.FC = () => {
           selectedKbIds,
           searchTerm,
           activeFilters.length > 0 ? activeFilters : undefined,
-          filterMode
+          filterMode,
+          caseSensitive
         );
         setDocuments(results as DocumentView[]);
       } else {
@@ -171,7 +202,7 @@ export const DocumentList: React.FC = () => {
 
   useEffect(() => {
     loadDocuments();
-  }, [selectedKbIds]); // Reload when KBs change
+  }, [selectedKbIds, caseSensitive]); // Reload when KBs or Case Sensitive setting change
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,15 +221,27 @@ export const DocumentList: React.FC = () => {
       <div className="table-controls">
         <form className="search-bar" onSubmit={handleSearch}>
           <Search size={18} className="search-icon" />
-          <input 
-            type="text" 
-            placeholder={t('documents.search_placeholder')} 
+          <input
+            type="text"
+            placeholder={t('documents.search_placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </form>
-        <button 
-          className={`btn btn-ghost ${showFilters ? 'active' : ''}`}
+
+        <div className="search-options">
+          <label className="checkbox-container">
+            <input
+              type="checkbox"
+              checked={caseSensitive}
+              onChange={(e) => setCaseSensitive(e.target.checked)}
+            />
+            <span>{t('documents.case_sensitive')}</span>
+          </label>
+        </div>
+
+        <button
+          className={`filter-btn ${showFilters || activeFilters.length > 0 ? 'active' : ''}`}
           onClick={() => setShowFilters(!showFilters)}
         >
           <Filter size={18} />
@@ -208,7 +251,7 @@ export const DocumentList: React.FC = () => {
 
       {showFilters && (
         <div className="documents-filters-panel">
-          <MetadataFilterManager 
+          <MetadataFilterManager
             onFilterChange={updateFilters}
             initialFilters={activeFilters}
             initialMode={filterMode}
@@ -225,6 +268,7 @@ export const DocumentList: React.FC = () => {
         <table className="data-table">
           <thead>
             <tr>
+              <th style={{ width: '40px' }}></th>
               <th>{t('documents.table.filename')}</th>
               <th>{t('documents.table.kb')}</th>
               <th>{t('documents.table.size')}</th>
@@ -239,20 +283,20 @@ export const DocumentList: React.FC = () => {
             {isLoading ? (
               Array(5).fill(0).map((_, i) => (
                 <tr key={i} className="skeleton-row">
-                  <td colSpan={8}><div className="shimmer" /></td>
+                  <td colSpan={9}><div className="shimmer" /></td>
                 </tr>
               ))
             ) : documents.length === 0 ? (
               <tr>
-                <td colSpan={8} className="empty-row">
+                <td colSpan={9} className="empty-row">
                   <div className="empty-state-content">
                     <p>No documents found</p>
                     {filterMode === 'hard' && activeFilters.length > 0 && (
                       <div className="empty-suggestion">
                         <Info size={16} />
                         <span>
-                          No results match your <strong>strict</strong> filters. 
-                          <button 
+                          No results match your <strong>strict</strong> filters.
+                          <button
                             className="suggestion-link"
                             onClick={() => {
                               setFilterMode('soft');
@@ -271,45 +315,80 @@ export const DocumentList: React.FC = () => {
               </tr>
             ) : (
               documents.map((doc) => (
-                <tr key={doc.id}>
-                  <td className="filename-cell">
-                    <div className="filename-cell-content">
-                      <FileText size={16} />
-                      <span>{getDocumentDisplayName(doc)}</span>
-                    </div>
-                  </td>
-                  <td>{doc.kb_id}</td>
-                  <td>{formatFileSize(doc.size)}</td>
-                  <td className="tags-cell">
-                    <div className="tags-cell-content">
-                      {getMetadataTags(doc).length > 0 ? getMetadataTags(doc).map((tag) => (
-                        <span key={tag} className="tag-badge" title={tag}>
-                          {tag}
-                        </span>
-                      )) : <span className="muted-value">{FALLBACK_VALUE}</span>}
-                    </div>
-                  </td>
-                  <td className="tags-cell">
-                    <div className="tags-cell-content">
-                      {getUserProvidedTags(doc).length > 0 ? getUserProvidedTags(doc).map((tag) => (
-                        <span key={tag} className="tag-badge" title={tag}>
-                          {tag}
-                        </span>
-                      )) : <span className="muted-value">{FALLBACK_VALUE}</span>}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${doc.ingestion_status}`}>
-                      {doc.ingestion_status || FALLBACK_VALUE}
-                    </span>
-                  </td>
-                  <td>{getDocumentCreatedAt(doc)}</td>
-                  <td className="actions-cell">
-                    <button className="btn-icon danger">
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
+                <React.Fragment key={doc.id}>
+                  <tr className={expandedDocId === doc.id ? 'row-expanded' : ''}>
+                    <td className="expand-cell">
+                      <button 
+                        className={`expand-btn ${expandedDocId === doc.id ? 'active' : ''}`}
+                        onClick={() => setExpandedDocId(expandedDocId === doc.id ? null : doc.id)}
+                        title="Show details"
+                      >
+                        <ChevronDown size={18} />
+                      </button>
+                    </td>
+                    <td className="filename-cell">
+                      <div className="filename-cell-content">
+                        <FileText size={16} />
+                        <span>{getDocumentDisplayName(doc)}</span>
+                      </div>
+                    </td>
+                    <td>{doc.kb_id}</td>
+                    <td>{formatFileSize(doc.size)}</td>
+                    <td className="tags-cell">
+                      <div className="tags-cell-content">
+                        {getMetadataTags(doc).length > 0 ? getMetadataTags(doc).map((tag) => (
+                          <span key={tag} className="tag-badge" title={tag}>
+                            {tag}
+                          </span>
+                        )) : <span className="muted-value">{FALLBACK_VALUE}</span>}
+                      </div>
+                    </td>
+                    <td className="tags-cell">
+                      <div className="tags-cell-content">
+                        {getUserProvidedTags(doc).length > 0 ? getUserProvidedTags(doc).map((tag) => (
+                          <span key={tag} className="tag-badge" title={tag}>
+                            {tag}
+                          </span>
+                        )) : <span className="muted-value">{FALLBACK_VALUE}</span>}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${doc.ingestion_status}`}>
+                        {doc.ingestion_status || FALLBACK_VALUE}
+                      </span>
+                    </td>
+                    <td>{formatDateShort(getRawIngestionTimestamp(doc))}</td>
+                    <td>
+                      <div className="actions-cell">
+                        <button className="btn-icon danger">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedDocId === doc.id && (
+                    <tr className="expansion-row">
+                      <td colSpan={9}>
+                        <div className="expansion-content">
+                          <div className="expansion-grid">
+                            <div className="expansion-item">
+                              <label>Document ID</label>
+                              <code>{doc.id}</code>
+                            </div>
+                            <div className="expansion-item">
+                              <label>Source Path</label>
+                              <code>{doc.source_path || 'N/A'}</code>
+                            </div>
+                            <div className="expansion-item">
+                              <label>Ingestion Timestamp</label>
+                              <code>{formatFullTimestamp(getRawIngestionTimestamp(doc))}</code>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             )}
           </tbody>
