@@ -36,6 +36,7 @@ export const ChatContainer: React.FC = () => {
     filters: activeFilters, 
     mode: filterMode, 
     updateFilters, 
+    setFilterMode,
     activeCount 
   } = useMetadataFilters();
   
@@ -159,6 +160,29 @@ export const ChatContainer: React.FC = () => {
 
   return (
     <div className="chat-container">
+      <header className="chat-header">
+        <div className="chat-header-info">
+          <h1>{t('chat.title')}</h1>
+          <p className="chat-header-subtitle">{t('chat.subtitle')}</p>
+        </div>
+        <div className="mode-selector">
+          <button 
+            className={`mode-btn ${filterMode === 'soft' ? 'active' : ''}`}
+            onClick={() => setFilterMode('soft')}
+            title={t('metadata.mode_soft')}
+          >
+            {t('metadata.mode_soft')}
+          </button>
+          <button 
+            className={`mode-btn ${filterMode === 'hard' ? 'active' : ''}`}
+            onClick={() => setFilterMode('hard')}
+            title={t('metadata.mode_hard')}
+          >
+            {t('metadata.mode_hard')}
+          </button>
+        </div>
+      </header>
+
       <div className="message-list" ref={scrollRef}>
         {messages.length === 0 ? (
           <div className="chat-empty-state">

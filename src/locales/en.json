@@ -38,7 +38,9 @@
     "feedback_positive": "Good response",
     "feedback_negative": "Poor response",
     "interrupted": "Response generation was interrupted.",
-    "filters": "Metadata Filters"
+    "filters": "Metadata Filters",
+    "title": "Chat",
+    "subtitle": "Interact with your knowledge bases using natural language."
   },
   "kb": {
     "title": "Knowledge Bases",
@@ -71,6 +73,8 @@
       "filename": "Filename",
       "kb": "KB",
       "size": "Size",
+      "tags": "Tags",
+      "user_provided_tags": "User Provided Tags",
       "created": "Created"
     }
   },
@@ -81,6 +85,8 @@
   },
   "metadata": {
     "title": "Metadata",
+    "mode_soft": "Use as ranking hints",
+    "mode_hard": "Require matching metadata",
     "presets": "Presets",
     "add_field": "Add Field",
     "empty_state": "No metadata fields added.",

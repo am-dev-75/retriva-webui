@@ -19,8 +19,8 @@ import i18n from '../app/i18n';
 /**
  * Locale-aware date formatting.
  */
-export const formatDate = (date: string | Date, options?: Intl.DateTimeFormatOptions) => {
-  const d = typeof date === 'string' ? new Date(date) : date;
+export const formatDate = (date: string | number | Date, options?: Intl.DateTimeFormatOptions) => {
+  const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
   return new Intl.DateTimeFormat(i18n.language, options || {
     year: 'numeric',
     month: 'short',
@@ -31,8 +31,8 @@ export const formatDate = (date: string | Date, options?: Intl.DateTimeFormatOpt
 /**
  * Locale-aware time formatting.
  */
-export const formatTime = (date: string | Date) => {
-  const d = typeof date === 'string' ? new Date(date) : date;
+export const formatTime = (date: string | number | Date) => {
+  const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
   return new Intl.DateTimeFormat(i18n.language, {
     hour: '2-digit',
     minute: '2-digit',

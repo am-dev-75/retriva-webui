@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2026 Andrea Marson (am.dev.75@gmail.com)
+/* Copyright (C) 2026 Andrea Marson (am.dev.75@gmail.com)
+
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,11 +51,17 @@ export interface Document {
   id: string;
   kb_id: string;
   filename: string;
+  page_title?: string;
+  source_path?: string;
   size: number;
   content_type: string;
-  metadata: Record<string, any>;
+
+  metadata?: Record<string, any>;
   ingestion_status: 'completed' | 'failed' | 'processing';
-  created_at: string;
+
+  created_at?: string | number;
+  ingested_at?: string | number;
+  ingestion_completed_at?: string | number;
 }
 
 export interface Artifact {

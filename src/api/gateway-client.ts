@@ -118,7 +118,8 @@ class GatewayClient {
   // Documents
   async getDocuments(kbId?: string): Promise<Document[]> {
     const query = kbId ? `?kb_id=${kbId}` : '';
-    return this.request<Document[]>(`/gateway/documents${query}`);
+    const response = await this.request<any>(`/gateway/documents${query}`);
+    return Array.isArray(response) ? response : (response.documents || []);
   }
 
   async searchDocuments(
@@ -127,7 +128,7 @@ class GatewayClient {
     metadataFilters?: MetadataFilter[], 
     metadataFilterMode?: MetadataFilterMode
   ): Promise<Document[]> {
-    return this.request<Document[]>('/gateway/documents/search', {
+    const response = await this.request<any>('/gateway/documents/search', {
       method: 'POST',
       body: JSON.stringify({
         kb_ids: kbIds,
@@ -136,6 +137,7 @@ class GatewayClient {
         metadata_filter_mode: metadataFilterMode
       }),
     });
+    return Array.isArray(response) ? response : (response.documents || []);
   }
 
   // Metadata

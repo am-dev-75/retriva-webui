@@ -15,6 +15,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, X, Filter } from 'lucide-react';
 import { gatewayClient } from '../../../api/gateway-client';
 import { 
@@ -35,6 +36,7 @@ export const MetadataFilterManager: React.FC<MetadataFilterProps> = ({
   initialFilters = [], 
   initialMode = 'soft' 
 }) => {
+  const { t } = useTranslation();
   const [fields, setFields] = useState<MetadataField[]>([]);
   const [activeFilters, setActiveFilters] = useState<FilterType[]>(initialFilters);
   const [mode, setMode] = useState<MetadataFilterMode>(initialMode);
@@ -110,13 +112,13 @@ export const MetadataFilterManager: React.FC<MetadataFilterProps> = ({
             className={`mode-btn ${mode === 'soft' ? 'active' : ''}`}
             onClick={() => handleModeChange('soft')}
           >
-            Use as ranking hints
+            {t('metadata.mode_soft')}
           </button>
           <button 
             className={`mode-btn ${mode === 'hard' ? 'active' : ''}`}
             onClick={() => handleModeChange('hard')}
           >
-            Require matching metadata
+            {t('metadata.mode_hard')}
           </button>
         </div>
       </div>

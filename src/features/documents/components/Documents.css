@@ -176,3 +176,23 @@
 .suggestion-link:hover {
   color: #3b82f6;
 }
+
+.tags-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.tag-badge {
+  background-color: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.muted-value {
+  color: var(--color-text-muted);
+}
