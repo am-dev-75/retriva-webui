@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, Filter, FileText, Trash2, ChevronDown } from 'lucide-react';
 import { Document } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
-import { formatFileSize, formatDate } from '../../../lib/formatting';
+import { formatFileSize } from '../../../lib/formatting';
 import { MetadataFilterManager } from '../../metadata/components/MetadataFilter';
 import { useMetadataFilters } from '../../metadata/hooks/useMetadataFilters';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
@@ -29,6 +29,7 @@ import './Documents.css';
 type DocumentView = Document & {
   page_title?: string;
   source_path?: string;
+  ingestion_timestamp?: string | number;
   ingested_at?: string | number;
   ingestion_completed_at?: string | number;
 };
@@ -138,15 +139,85 @@ const formatDateShort = (timestamp?: string | number): string => {
   }
 };
 
+/**
+ * Build a RegExp from a user search term.
+ *
+ * Behavior:
+ *  - `*` matches any sequence of characters (including empty).
+ *  - `?` matches any single character.
+ *  - All other characters are matched literally (regex-escaped).
+ *  - If the term contains no wildcards, the match is a plain substring match.
+ */
+const buildSearchRegex = (term: string, isCaseSensitive: boolean): RegExp | null => {
+  if (!term) return null;
+
+  const hasWildcards = /[*?]/.test(term);
+
+  // Escape regex metacharacters, then turn glob `*` and `?` into regex equivalents.
+  const escaped = term
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '.*')
+    .replace(/\?/g, '.');
+
+  // When wildcards are used, treat the pattern as a full-string glob match.
+  // Otherwise fall back to substring matching.
+  const pattern = hasWildcards ? `^${escaped}$` : escaped;
+  const flags = isCaseSensitive ? '' : 'i';
+
+  try {
+    return new RegExp(pattern, flags);
+  } catch {
+    return null;
+  }
+};
+
+const matchesSearchTerm = (doc: DocumentView, term: string, isCaseSensitive: boolean): boolean => {
+  if (!term) return true;
+
+  // Match only against the displayed document name (the FILENAME column)
+  const displayName = getDocumentDisplayName(doc);
+
+  const regex = buildSearchRegex(term, isCaseSensitive);
+  if (!regex) {
+    // Fallback to literal substring matching if regex construction failed.
+    if (isCaseSensitive) {
+      return displayName.includes(term);
+    }
+    return displayName.toLowerCase().includes(term.toLowerCase());
+  }
+
+  return regex.test(displayName);
+};
+
+/**
+ * A term is treated as "match everything" (equivalent to empty search) when
+ * it contains only wildcard characters such as `*` or whitespace.
+ */
+const isMatchAllTerm = (term: string): boolean => {
+  const trimmed = term.trim();
+  if (!trimmed) return true;
+  return /^\*+$/.test(trimmed);
+};
+
+const filterDocumentsBySearchTerm = (
+  docs: DocumentView[],
+  term: string,
+  isCaseSensitive: boolean
+): DocumentView[] => {
+  if (isMatchAllTerm(term)) return docs;
+  return docs.filter((doc) => matchesSearchTerm(doc, term.trim(), isCaseSensitive));
+};
+
 export const DocumentList: React.FC = () => {
   const { t } = useTranslation();
   const { selectedKbIds } = useKnowledgeBase();
   const [documents, setDocuments] = useState<DocumentView[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
   const {
     filters: activeFilters,
     mode: filterMode,
@@ -175,23 +246,56 @@ export const DocumentList: React.FC = () => {
 
   const loadDocuments = async () => {
     setIsLoading(true);
+    setHasSearched(true);
     try {
-      // If we have a search term or filters, use search API
-      if (searchTerm || activeFilters.length > 0) {
-        const results = await gatewayClient.searchDocuments(
+      const trimmedSearchTerm = searchTerm.trim();
+
+      let rawResults: DocumentView[];
+
+      if (trimmedSearchTerm || activeFilters.length > 0) {
+        // Send the raw search term (including wildcards) to the backend.
+        // The Gateway sets is_discovery=True and Core's discovery path
+        // handles glob-to-regex conversion (e.g. * → .* matches everything).
+        rawResults = (await gatewayClient.searchDocuments(
           selectedKbIds,
-          searchTerm,
+          trimmedSearchTerm,
           activeFilters.length > 0 ? activeFilters : undefined,
           filterMode,
           caseSensitive
-        );
-        setDocuments(results as DocumentView[]);
+        )) as DocumentView[];
       } else {
-        // Otherwise just get all documents (optionally filtered by first selected KB)
-        const kbId = selectedKbIds.length > 0 ? selectedKbIds[0] : undefined;
-        const results = await gatewayClient.getDocuments(kbId);
-        setDocuments(results as DocumentView[]);
+        // No query and no filters: list every document across all selected KBs.
+        const fetches: Promise<Document[]>[] = [];
+
+        if (selectedKbIds.length > 0) {
+          for (const kbId of selectedKbIds) {
+            fetches.push(gatewayClient.getDocuments(kbId));
+          }
+        }
+        // Always include an unscoped fetch so documents without a kb_id
+        // (or assigned to other KBs the backend chooses to expose) are
+        // not silently hidden.
+        fetches.push(gatewayClient.getDocuments());
+
+        const buckets = await Promise.all(fetches);
+        const merged = buckets.flat() as DocumentView[];
+
+        const seen = new Set<string>();
+        rawResults = merged.filter((doc) => {
+          const key = doc?.id;
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
       }
+
+      // Client-side filtering for additional glob semantics (e.g. "?")
+      const filteredResults = filterDocumentsBySearchTerm(
+        rawResults,
+        trimmedSearchTerm,
+        caseSensitive
+      );
+      setDocuments(filteredResults);
     } catch (error) {
       console.error('Failed to load documents:', error);
       setDocuments([]);
@@ -200,9 +304,14 @@ export const DocumentList: React.FC = () => {
     }
   };
 
+  // Re-run search when KBs change or case sensitivity is toggled,
+  // but only if the user has already performed a search.
   useEffect(() => {
-    loadDocuments();
-  }, [selectedKbIds, caseSensitive]); // Reload when KBs or Case Sensitive setting change
+    if (hasSearched) {
+      loadDocuments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKbIds, caseSensitive]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,6 +335,7 @@ export const DocumentList: React.FC = () => {
             placeholder={t('documents.search_placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            title={'Wildcards supported: * (any sequence), ? (single character)'}
           />
         </form>
 
@@ -280,7 +390,15 @@ export const DocumentList: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {isLoading ? (
+            {!hasSearched ? (
+              <tr>
+                <td colSpan={9} className="empty-row">
+                  <div className="empty-state-content">
+                    <p>{t('documents.initial_prompt')}</p>
+                  </div>
+                </td>
+              </tr>
+            ) : isLoading ? (
               Array(5).fill(0).map((_, i) => (
                 <tr key={i} className="skeleton-row">
                   <td colSpan={9}><div className="shimmer" /></td>

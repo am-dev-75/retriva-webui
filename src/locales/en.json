@@ -71,6 +71,7 @@
     "subtitle": "Browse and manage your ingested documents.",
     "search_placeholder": "Search documents...",
     "case_sensitive": "Case Sensitive",
+    "initial_prompt": "Search for documents by name or use filters to browse your knowledge base.",
     "table": {
       "filename": "Filename",
       "kb": "KB",

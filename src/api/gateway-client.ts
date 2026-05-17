@@ -123,21 +123,37 @@ class GatewayClient {
   }
 
   async searchDocuments(
-    kbIds: string[], 
-    query: string, 
-    metadataFilters?: MetadataFilter[], 
+    kbIds: string[],
+    query: string,
+    metadataFilters?: MetadataFilter[],
     metadataFilterMode?: MetadataFilterMode,
     caseSensitive?: boolean
   ): Promise<Document[]> {
+    // Build the request payload, omitting fields that are not meaningful so
+    // the backend can apply its "no constraint" semantics. For example:
+    //  - When `query` is empty/whitespace, do not send it at all.
+    //  - When `kbIds` is empty, do not restrict by knowledge base.
+    const payload: Record<string, unknown> = {};
+
+    if (kbIds && kbIds.length > 0) {
+      payload.kb_ids = kbIds;
+    }
+    if (query && query.trim().length > 0) {
+      payload.query = query;
+    }
+    if (metadataFilters && metadataFilters.length > 0) {
+      payload.metadata_filters = metadataFilters;
+    }
+    if (metadataFilterMode) {
+      payload.metadata_filter_mode = metadataFilterMode;
+    }
+    if (caseSensitive !== undefined) {
+      payload.case_sensitive = caseSensitive;
+    }
+
     const response = await this.request<any>('/gateway/documents/search', {
       method: 'POST',
-      body: JSON.stringify({
-        kb_ids: kbIds,
-        query,
-        metadata_filters: metadataFilters,
-        metadata_filter_mode: metadataFilterMode,
-        case_sensitive: caseSensitive
-      }),
+      body: JSON.stringify(payload),
     });
     return Array.isArray(response) ? response : (response.documents || []);
   }
