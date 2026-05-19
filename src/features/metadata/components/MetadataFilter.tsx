@@ -29,12 +29,15 @@ interface MetadataFilterProps {
   onFilterChange: (filters: FilterType[], mode: MetadataFilterMode) => void;
   initialFilters?: FilterType[];
   initialMode?: MetadataFilterMode;
+  /** When true, the soft/hard mode selector is hidden (e.g. on the Documents page). */
+  hideMode?: boolean;
 }
 
 export const MetadataFilterManager: React.FC<MetadataFilterProps> = ({ 
   onFilterChange, 
   initialFilters = [], 
-  initialMode = 'soft' 
+  initialMode = 'soft',
+  hideMode = false
 }) => {
   const { t } = useTranslation();
   const [fields, setFields] = useState<MetadataField[]>([]);
@@ -107,20 +110,22 @@ export const MetadataFilterManager: React.FC<MetadataFilterProps> = ({
     <div className="metadata-filter-container">
       <div className="filter-header">
         <h3><Filter size={14} style={{ marginRight: '6px' }} /> Metadata Filters</h3>
-        <div className="mode-selector">
-          <button 
-            className={`mode-btn ${mode === 'soft' ? 'active' : ''}`}
-            onClick={() => handleModeChange('soft')}
-          >
-            {t('metadata.mode_soft')}
-          </button>
-          <button 
-            className={`mode-btn ${mode === 'hard' ? 'active' : ''}`}
-            onClick={() => handleModeChange('hard')}
-          >
-            {t('metadata.mode_hard')}
-          </button>
-        </div>
+        {!hideMode && (
+          <div className="mode-selector">
+            <button 
+              className={`mode-btn ${mode === 'soft' ? 'active' : ''}`}
+              onClick={() => handleModeChange('soft')}
+            >
+              {t('metadata.mode_soft')}
+            </button>
+            <button 
+              className={`mode-btn ${mode === 'hard' ? 'active' : ''}`}
+              onClick={() => handleModeChange('hard')}
+            >
+              {t('metadata.mode_hard')}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="filter-list">

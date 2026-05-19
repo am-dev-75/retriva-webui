@@ -23,7 +23,7 @@ import { formatFileSize } from '../../../lib/formatting';
 import { MetadataFilterManager } from '../../metadata/components/MetadataFilter';
 import { useMetadataFilters } from '../../metadata/hooks/useMetadataFilters';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
-import { Info } from 'lucide-react';
+
 import './Documents.css';
 
 type DocumentView = Document & {
@@ -260,7 +260,7 @@ export const DocumentList: React.FC = () => {
           selectedKbIds,
           trimmedSearchTerm,
           activeFilters.length > 0 ? activeFilters : undefined,
-          filterMode,
+          undefined, // metadata_filter_mode is not used in discovery
           caseSensitive
         )) as DocumentView[];
       } else {
@@ -365,6 +365,7 @@ export const DocumentList: React.FC = () => {
             onFilterChange={updateFilters}
             initialFilters={activeFilters}
             initialMode={filterMode}
+            hideMode
           />
           <div className="filter-actions">
             <button className="btn btn-primary btn-sm" onClick={loadDocuments}>
@@ -409,25 +410,6 @@ export const DocumentList: React.FC = () => {
                 <td colSpan={9} className="empty-row">
                   <div className="empty-state-content">
                     <p>No documents found</p>
-                    {filterMode === 'hard' && activeFilters.length > 0 && (
-                      <div className="empty-suggestion">
-                        <Info size={16} />
-                        <span>
-                          No results match your <strong>strict</strong> filters.
-                          <button
-                            className="suggestion-link"
-                            onClick={() => {
-                              setFilterMode('soft');
-                              // loadDocuments will be triggered by useEffect if we add dependency, 
-                              // or we can call it manually here.
-                              setTimeout(loadDocuments, 0);
-                            }}
-                          >
-                            Try switching to "Ranking Hints"
-                          </button>
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </td>
               </tr>
