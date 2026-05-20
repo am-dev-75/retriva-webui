@@ -221,8 +221,7 @@ export const DocumentList: React.FC = () => {
   const {
     filters: activeFilters,
     mode: filterMode,
-    updateFilters,
-    setFilterMode
+    updateFilters
   } = useMetadataFilters();
 
   const formatFullTimestamp = (timestamp?: string | number) => {

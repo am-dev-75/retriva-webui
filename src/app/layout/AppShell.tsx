@@ -66,7 +66,7 @@ export const AppShell: React.FC = () => {
   const getKbLabel = () => {
     if (selectedKbIds.length === 0) return 'Select Knowledge Base';
     if (selectedKbIds.length === 1) {
-      if (selectedKbIds[0] === 'default') return 'Default Knowledge Base';
+      if (selectedKbIds[0] === 'default') return 'Default';
       const kb = knowledgeBases.find(k => k.id === selectedKbIds[0]);
       return kb ? kb.name : selectedKbIds[0];
     }
@@ -113,45 +113,48 @@ export const AppShell: React.FC = () => {
 
       <main className="app-main">
         <header className="main-header">
-          <button className="mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(true)}>
-            <Menu size={24} />
-          </button>
-          <div className="header-title">
-            <div className="kb-selector-container" ref={kbDropdownRef}>
-              <div 
-                className={`kb-selector-trigger ${isKbDropdownOpen ? 'open' : ''}`}
-                onClick={() => setIsKbDropdownOpen(!isKbDropdownOpen)}
-              >
-                <Database size={16} />
-                <span className="selected-kb-label">{getKbLabel()}</span>
-                <ChevronDown size={14} className="chevron" />
-              </div>
+          <div className="header-content-wrapper">
+            <button className="mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(true)}>
+              <Menu size={24} />
+            </button>
+            <div className="main-header-title">
+              <span className="active-kbs-label">Active KBs:</span>
+              <div className="kb-selector-container" ref={kbDropdownRef}>
+                <div 
+                  className={`kb-selector-trigger ${isKbDropdownOpen ? 'open' : ''}`}
+                  onClick={() => setIsKbDropdownOpen(!isKbDropdownOpen)}
+                >
+                  <Database size={16} />
+                  <span className="selected-kb-label">{getKbLabel()}</span>
+                  <ChevronDown size={14} className="chevron" />
+                </div>
 
-              {isKbDropdownOpen && (
-                <div className="kb-multi-dropdown">
-                  <div 
-                    className={`kb-option ${selectedKbIds.includes('default') ? 'selected' : ''}`}
-                    onClick={() => toggleKbSelection('default')}
-                  >
-                    <div className="checkbox">
-                      {selectedKbIds.includes('default') && <Check size={12} />}
-                    </div>
-                    <span>Default Knowledge Base</span>
-                  </div>
-                  {knowledgeBases.map(kb => (
+                {isKbDropdownOpen && (
+                  <div className="kb-multi-dropdown">
                     <div 
-                      key={kb.id} 
-                      className={`kb-option ${selectedKbIds.includes(kb.id) ? 'selected' : ''}`}
-                      onClick={() => toggleKbSelection(kb.id)}
+                      className={`kb-option ${selectedKbIds.includes('default') ? 'selected' : ''}`}
+                      onClick={() => toggleKbSelection('default')}
                     >
                       <div className="checkbox">
-                        {selectedKbIds.includes(kb.id) && <Check size={12} />}
+                        {selectedKbIds.includes('default') && <Check size={12} />}
                       </div>
-                      <span>{kb.name}</span>
+                      <span>Default</span>
                     </div>
-                  ))}
-                </div>
-              )}
+                    {knowledgeBases.filter(kb => kb.id !== 'default').map(kb => (
+                      <div 
+                        key={kb.id} 
+                        className={`kb-option ${selectedKbIds.includes(kb.id) ? 'selected' : ''}`}
+                        onClick={() => toggleKbSelection(kb.id)}
+                      >
+                        <div className="checkbox">
+                          {selectedKbIds.includes(kb.id) && <Check size={12} />}
+                        </div>
+                        <span>{kb.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>

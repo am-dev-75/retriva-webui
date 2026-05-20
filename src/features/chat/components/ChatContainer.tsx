@@ -165,22 +165,6 @@ export const ChatContainer: React.FC = () => {
           <h1>{t('chat.title')}</h1>
           <p className="chat-header-subtitle">{t('chat.subtitle')}</p>
         </div>
-        <div className="mode-selector">
-          <button 
-            className={`mode-btn ${filterMode === 'soft' ? 'active' : ''}`}
-            onClick={() => setFilterMode('soft')}
-            title={t('metadata.mode_soft')}
-          >
-            {t('metadata.mode_soft')}
-          </button>
-          <button 
-            className={`mode-btn ${filterMode === 'hard' ? 'active' : ''}`}
-            onClick={() => setFilterMode('hard')}
-            title={t('metadata.mode_hard')}
-          >
-            {t('metadata.mode_hard')}
-          </button>
-        </div>
       </header>
 
       <div className="message-list" ref={scrollRef}>
@@ -309,6 +293,7 @@ export const ChatContainer: React.FC = () => {
             onFilterChange={updateFilters}
             initialFilters={activeFilters}
             initialMode={filterMode}
+            hideMode={true}
           />
         </div>
       )}
@@ -378,6 +363,26 @@ export const ChatContainer: React.FC = () => {
             </button>
           )}
         </div>
+
+        <div className="mode-selector-container">
+          <div className="mode-selector">
+            <button 
+              className={`mode-btn ${filterMode === 'soft' ? 'active' : ''}`}
+              onClick={() => setFilterMode('soft')}
+              title={t('metadata.mode_soft')}
+            >
+              {t('metadata.mode_soft')}
+            </button>
+            <button 
+              className={`mode-btn ${filterMode === 'hard' ? 'active' : ''}`}
+              onClick={() => setFilterMode('hard')}
+              title={t('metadata.mode_hard')}
+            >
+              {t('metadata.mode_hard')}
+            </button>
+          </div>
+        </div>
+
         <div className="input-footer">
           <div className="filter-status-indicator">
             {activeCount > 0 ? (
@@ -390,8 +395,8 @@ export const ChatContainer: React.FC = () => {
             )}
           </div>
           <p className="input-hint">{t('chat.input_hint')}</p>
-          <p className="chat-disclaimer">{t('chat.disclaimer')}</p>
         </div>
+        <p className="chat-disclaimer">{t('chat.disclaimer')}</p>
       </div>
     </div>
   );

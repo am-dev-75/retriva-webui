@@ -133,12 +133,34 @@
 
 .main-header {
   height: 64px;
-  padding: 0 var(--spacing-lg);
+  padding: 0;
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--color-border);
   background-color: var(--color-bg);
   position: relative;
+}
+
+.header-content-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-xl);
+}
+
+.main-header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.active-kbs-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .main-content {
@@ -287,5 +309,9 @@
 
   .main-content {
     padding: var(--spacing-lg);
+  }
+
+  .header-content-wrapper {
+    padding: 0 var(--spacing-lg);
   }
 }

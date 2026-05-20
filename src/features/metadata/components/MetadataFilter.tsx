@@ -48,15 +48,15 @@ export const MetadataFilterManager: React.FC<MetadataFilterProps> = ({
   const [selectedField, setSelectedField] = useState<string>('');
   const [operator, setOperator] = useState<FilterType['operator']>('eq');
   const [value, setValue] = useState<string>('');
-  const [knownValues, setKnownValues] = useState<any[]>([]);
+  const [knownValues, setKnownValues] = useState<unknown[]>([]);
 
   useEffect(() => {
     const loadSchema = async () => {
       try {
         const schema = await gatewayClient.getMetadataSchema();
         setFields(schema.fields);
-        if (schema.fields.length > 0 && !selectedField) {
-          setSelectedField(schema.fields[0].name);
+        if (schema.fields.length > 0) {
+          setSelectedField(prev => prev || schema.fields[0].name);
         }
       } catch (error) {
         console.error('Failed to load metadata schema:', error);
@@ -66,27 +66,37 @@ export const MetadataFilterManager: React.FC<MetadataFilterProps> = ({
   }, []);
 
   useEffect(() => {
-    const loadValues = async () => {
-      if (!selectedField) return;
+    const timer = setTimeout(async () => {
+      if (!selectedField) {
+        setKnownValues([]);
+        return;
+      }
       try {
         const response = await gatewayClient.getMetadataValues(selectedField);
         setKnownValues(response.values || []);
-      } catch (error) {
+      } catch {
         setKnownValues([]);
       }
-    };
-    loadValues();
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [selectedField]);
 
   const handleAddFilter = () => {
-    if (!selectedField || value === '') return;
+    if (!selectedField || (operator !== 'exists' && value === '')) return;
     
     // Simple type conversion based on schema if needed
     const fieldType = fields.find(f => f.name === selectedField)?.type;
-    let finalValue: any = value;
-    if (fieldType === 'integer') finalValue = parseInt(value, 10);
-    else if (fieldType === 'float') finalValue = parseFloat(value);
-    else if (fieldType === 'boolean') finalValue = value === 'true';
+    let finalValue: unknown = value;
+    if (operator === 'exists') {
+      finalValue = true;
+    } else if (fieldType === 'integer') {
+      finalValue = parseInt(value, 10);
+    } else if (fieldType === 'float') {
+      finalValue = parseFloat(value);
+    } else if (fieldType === 'boolean') {
+      finalValue = value === 'true';
+    }
 
     const newFilter: FilterType = { field: selectedField, operator, value: finalValue };
     const newFilters = [...activeFilters, newFilter];
@@ -143,20 +153,26 @@ export const MetadataFilterManager: React.FC<MetadataFilterProps> = ({
 
       <div className="add-filter-row">
         <div className="filter-input-group">
-          <select 
-            className="filter-select"
+          <input 
+            type="text"
+            id="metadata-filter-field-input"
+            className="filter-field-input"
+            placeholder="Field..."
             value={selectedField}
             onChange={(e) => setSelectedField(e.target.value)}
-          >
+            list="metadata-fields"
+          />
+          <datalist id="metadata-fields">
             {fields.map(f => (
-              <option key={f.name} value={f.name}>{f.name}</option>
+              <option key={f.name} value={f.name} />
             ))}
-          </select>
+          </datalist>
           
           <select 
+            id="metadata-filter-operator-select"
             className="filter-select"
             value={operator}
-            onChange={(e) => setOperator(e.target.value as any)}
+            onChange={(e) => setOperator(e.target.value as FilterType['operator'])}
           >
             <option value="eq">=</option>
             <option value="neq">!=</option>
@@ -171,6 +187,7 @@ export const MetadataFilterManager: React.FC<MetadataFilterProps> = ({
             <div className="filter-input disabled">Value ignored</div>
           ) : knownValues.length > 0 ? (
             <select 
+              id="metadata-filter-value-select"
               className="filter-input"
               value={value}
               onChange={(e) => setValue(e.target.value)}
@@ -183,6 +200,7 @@ export const MetadataFilterManager: React.FC<MetadataFilterProps> = ({
           ) : (
             <input 
               type="text"
+              id="metadata-filter-value-input"
               className="filter-input"
               placeholder="Value..."
               value={value}
@@ -193,6 +211,7 @@ export const MetadataFilterManager: React.FC<MetadataFilterProps> = ({
         </div>
         
         <button 
+          id="metadata-filter-add-btn"
           className="btn-add-filter"
           onClick={handleAddFilter}
           disabled={!selectedField || (operator !== 'exists' && value === '')}

@@ -140,6 +140,17 @@
   border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.filter-field-input {
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  width: 120px;
+}
+
 .filter-select option {
   background: #1e293b;
 }
