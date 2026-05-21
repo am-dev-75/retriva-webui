@@ -145,3 +145,14 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-muted);
+  font-style: italic;
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}

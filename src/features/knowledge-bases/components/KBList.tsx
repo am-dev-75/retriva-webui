@@ -16,53 +16,62 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, ExternalLink, Database } from 'lucide-react';
-import { KnowledgeBase } from '../../../api/types';
+import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
+import { gatewayClient } from '../../../api/gateway-client';
 import './KnowledgeBases.css';
 
 export const KBList: React.FC = () => {
   const { t } = useTranslation();
-  const [kbs, setKbs] = useState<KnowledgeBase[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const { knowledgeBases, isLoading, refreshKBs, setSelectedKbIds } = useKnowledgeBase();
   const [isCreating, setIsCreating] = useState(false);
   const [newKbName, setNewKbName] = useState('');
+  const [docCounts, setDocCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    loadKbs();
-  }, []);
+    if (knowledgeBases.length === 0) return;
+    let cancelled = false;
 
-  const loadKbs = async () => {
-    setIsLoading(true);
-    try {
-      // Mocking for now
-      setTimeout(() => {
-        setKbs([
-          { id: '1', name: 'Company Handbook', document_count: 12, status: 'active' },
-          { id: '2', name: 'Product Specs', document_count: 45, status: 'active' },
-          { id: '3', name: 'Research Papers', document_count: 3, status: 'processing' },
-        ]);
-        setIsLoading(false);
-      }, 500);
-    } catch (error) {
-      console.error('Failed to load KBs:', error);
-      setIsLoading(false);
-    }
-  };
+    const fetchCounts = async () => {
+      const counts: Record<string, number> = {};
+      await Promise.all(
+        knowledgeBases.map(async (kb) => {
+          try {
+            const docs = await gatewayClient.getDocuments(kb.id);
+            counts[kb.id] = docs.length;
+          } catch {
+            counts[kb.id] = 0;
+          }
+        })
+      );
+      if (!cancelled) setDocCounts(counts);
+    };
 
+    fetchCounts();
+    return () => { cancelled = true; };
+  }, [knowledgeBases]);
   const handleCreate = async () => {
     if (!newKbName.trim()) return;
     try {
-      const newKb: KnowledgeBase = {
-        id: Date.now().toString(),
-        name: newKbName,
-        document_count: 0,
-        status: 'active'
-      };
-      setKbs([...kbs, newKb]);
+      await gatewayClient.createKB(newKbName.trim());
       setNewKbName('');
       setIsCreating(false);
+      await refreshKBs();
     } catch (error) {
       console.error('Failed to create KB:', error);
+    }
+  };
+
+  const handleDelete = async (kbId: string) => {
+    if (window.confirm(t('kb.confirm_delete'))) {
+      try {
+        await gatewayClient.deleteKB(kbId);
+        await refreshKBs();
+      } catch (error) {
+        console.error('Failed to delete KB:', error);
+      }
     }
   };
 
@@ -100,8 +109,12 @@ export const KBList: React.FC = () => {
       <div className="kb-grid">
         {isLoading ? (
           Array(3).fill(0).map((_, i) => <div key={i} className="kb-card skeleton" />)
+        ) : knowledgeBases.length === 0 ? (
+          <div className="empty-state">
+            <p>{t('kb.empty_state')}</p>
+          </div>
         ) : (
-          kbs.map((kb) => (
+          knowledgeBases.map((kb) => (
             <div key={kb.id} className="kb-card">
               <div className="kb-card-header">
                 <div className="kb-icon">
@@ -114,15 +127,26 @@ export const KBList: React.FC = () => {
               </div>
               <div className="kb-stats">
                 <div className="stat">
-                  <span className="stat-value">{kb.document_count}</span>
+                  <span className="stat-value">{docCounts[kb.id] ?? kb.document_count}</span>
                   <span className="stat-label">{t('kb.doc_count')}</span>
                 </div>
               </div>
               <div className="kb-card-footer">
-                <button className="btn-icon" title={t('kb.view_docs')}>
+                <button 
+                  className="btn-icon" 
+                  title={t('kb.view_docs')}
+                  onClick={() => {
+                    setSelectedKbIds([kb.id]);
+                    navigate('/documents', { state: { performSearch: true } });
+                  }}
+                >
                   <ExternalLink size={18} />
                 </button>
-                <button className="btn-icon danger" title={t('kb.delete_title')}>
+                <button 
+                  className="btn-icon danger" 
+                  title={t('kb.delete_title')}
+                  onClick={() => handleDelete(kb.id)}
+                >
                   <Trash2 size={18} />
                 </button>
               </div>

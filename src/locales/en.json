@@ -51,7 +51,9 @@
     "name_placeholder": "KB Name",
     "doc_count": "Documents",
     "view_docs": "View Documents",
-    "delete_title": "Delete KB"
+    "delete_title": "Delete KB",
+    "confirm_delete": "Are you sure you want to delete this knowledge base?",
+    "empty_state": "No Knowledge Bases found. Create one to get started."
   },
   "ingestion": {
     "title": "Ingestion",

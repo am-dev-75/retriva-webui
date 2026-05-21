@@ -86,6 +86,12 @@ class GatewayClient {
     });
   }
 
+  async deleteKB(kbId: string): Promise<void> {
+    return this.request<void>(`/gateway/kbs/${kbId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Ingestion
   async createBatch(metadata?: Record<string, any>): Promise<{ batch_id: string, status: string }> {
     return this.request<{ batch_id: string, status: string }>('/gateway/ingestion/batches', {

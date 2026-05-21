@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { KnowledgeBase } from '../../api/types';
 import { gatewayClient } from '../../api/gateway-client';
 
@@ -48,17 +48,21 @@ export const KnowledgeBaseProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
-  const refreshKBs = async () => {
+  const refreshKBs = useCallback(async () => {
     setIsLoading(true);
     try {
       const kbs = await gatewayClient.getKBs();
       setKnowledgeBases(kbs);
+      setSelectedKbIds(prev => {
+        const validIds = prev.filter(id => id === 'default' || kbs.some(k => k.id === id));
+        return validIds.length === 0 ? ['default'] : validIds;
+      });
     } catch (error) {
       console.error('Failed to fetch Knowledge Bases:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshKBs();

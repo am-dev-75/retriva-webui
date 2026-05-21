@@ -16,6 +16,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { Search, Filter, FileText, Trash2, ChevronDown } from 'lucide-react';
 import { Document } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
@@ -210,6 +211,7 @@ const filterDocumentsBySearchTerm = (
 
 export const DocumentList: React.FC = () => {
   const { t } = useTranslation();
+  const location = useLocation();
   const { selectedKbIds } = useKnowledgeBase();
   const [documents, setDocuments] = useState<DocumentView[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -303,14 +305,20 @@ export const DocumentList: React.FC = () => {
     }
   };
 
-  // Re-run search when KBs change or case sensitivity is toggled,
-  // but only if the user has already performed a search.
+  // Trigger search if navigating from KB list "View documents"
+  useEffect(() => {
+    if (location.state?.performSearch) {
+      setHasSearched(true);
+    }
+  }, [location.state]);
+
+  // Re-run search when KBs change, case sensitivity is toggled, or search state changes
   useEffect(() => {
     if (hasSearched) {
       loadDocuments();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedKbIds, caseSensitive]);
+  }, [selectedKbIds, caseSensitive, hasSearched]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

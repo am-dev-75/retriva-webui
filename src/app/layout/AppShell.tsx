@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
   MessageSquare, 
@@ -47,6 +47,7 @@ export const AppShell: React.FC = () => {
   const { t } = useTranslation();
   const { theme, resolvedTheme } = useTheme();
   const { selectedKbIds, toggleKbSelection, knowledgeBases } = useKnowledgeBase();
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isKbDropdownOpen, setIsKbDropdownOpen] = useState(false);
   const kbDropdownRef = useRef<HTMLDivElement>(null);
@@ -66,7 +67,7 @@ export const AppShell: React.FC = () => {
   const getKbLabel = () => {
     if (selectedKbIds.length === 0) return 'Select Knowledge Base';
     if (selectedKbIds.length === 1) {
-      if (selectedKbIds[0] === 'default') return 'Default';
+      if (selectedKbIds[0] === 'default') return 'default';
       const kb = knowledgeBases.find(k => k.id === selectedKbIds[0]);
       return kb ? kb.name : selectedKbIds[0];
     }
@@ -117,6 +118,7 @@ export const AppShell: React.FC = () => {
             <button className="mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(true)}>
               <Menu size={24} />
             </button>
+            {location.pathname !== '/kb' && (
             <div className="main-header-title">
               <span className="active-kbs-label">Active KBs:</span>
               <div className="kb-selector-container" ref={kbDropdownRef}>
@@ -138,7 +140,7 @@ export const AppShell: React.FC = () => {
                       <div className="checkbox">
                         {selectedKbIds.includes('default') && <Check size={12} />}
                       </div>
-                      <span>Default</span>
+                      <span>default</span>
                     </div>
                     {knowledgeBases.filter(kb => kb.id !== 'default').map(kb => (
                       <div 
@@ -156,6 +158,7 @@ export const AppShell: React.FC = () => {
                 )}
               </div>
             </div>
+            )}
           </div>
         </header>
         <div className="main-content">
