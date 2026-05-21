@@ -49,13 +49,22 @@ src/
 ### 1. Gateway Client
 A centralized `GatewayClient` class handles all HTTP communication with the Retriva Gateway. It encapsulates request/response logic, error handling, and type safety.
 
-### 2. Design System
+### 2. Knowledge Base Data Flow
+Knowledge Bases are a first-class resource owned by **Retriva Core**. The WebUI never assumes any cosmetic or in-memory KB state:
+
+- **Core** is the sole authority: it persists KB records (`kb_id`, `name`, `description`, timestamps, settings) in a SQLite registry and exposes CRUD endpoints under `/api/v2/kbs`. The single underlying Qdrant collection is partitioned by `kb_id` payload filters; deleting a KB cascades to its Qdrant points and deduplication records.
+- **Gateway** is a stateless pass-through: `/gateway/kbs/*` handlers forward to Core via the typed `CoreClient`, translating Core's `kb_id` field to the WebUI's legacy `id` field at the boundary so the existing WebUI contract is preserved.
+- **WebUI** treats KBs as remote read-mostly data. The `KnowledgeBaseProvider` holds the selection state; the canonical `default` KB is guaranteed by Core to always exist, which the provider relies on for its fallback semantics.
+
+The specification governing this data flow is `docs/sdd/SDD-Retriva-Knowledge-Bases.md`.
+
+### 3. Design System
 The UI uses a neutral, minimal enterprise theme defined in `src/styles/tokens.css`. Semantic CSS variables allow for seamless switching between light and dark modes without component-level changes.
 
-### 3. Speech Input Abstraction
+### 4. Speech Input Abstraction
 The `speech-input` feature is architected with a provider pattern. The current version uses a `NoopProvider`, but the interface is ready to accept browser-native or Gateway-mediated speech-to-text engines in the future.
 
-### 4. Internationalization
+### 5. Internationalization
 Localization is handled by `react-i18next`. The `src/lib/formatting.ts` module provides locale-aware helpers for:
 - Dates and Times
 - Numbers and Percentages

@@ -67,7 +67,6 @@ export const AppShell: React.FC = () => {
   const getKbLabel = () => {
     if (selectedKbIds.length === 0) return 'Select Knowledge Base';
     if (selectedKbIds.length === 1) {
-      if (selectedKbIds[0] === 'default') return 'default';
       const kb = knowledgeBases.find(k => k.id === selectedKbIds[0]);
       return kb ? kb.name : selectedKbIds[0];
     }
@@ -133,16 +132,7 @@ export const AppShell: React.FC = () => {
 
                 {isKbDropdownOpen && (
                   <div className="kb-multi-dropdown">
-                    <div 
-                      className={`kb-option ${selectedKbIds.includes('default') ? 'selected' : ''}`}
-                      onClick={() => toggleKbSelection('default')}
-                    >
-                      <div className="checkbox">
-                        {selectedKbIds.includes('default') && <Check size={12} />}
-                      </div>
-                      <span>default</span>
-                    </div>
-                    {knowledgeBases.filter(kb => kb.id !== 'default').map(kb => (
+                    {knowledgeBases.map(kb => (
                       <div 
                         key={kb.id} 
                         className={`kb-option ${selectedKbIds.includes(kb.id) ? 'selected' : ''}`}
