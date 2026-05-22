@@ -253,7 +253,7 @@ export const DocumentList: React.FC = () => {
 
       let rawResults: DocumentView[];
 
-      if (trimmedSearchTerm || activeFilters.length > 0) {
+      if ((trimmedSearchTerm && !isMatchAllTerm(trimmedSearchTerm)) || activeFilters.length > 0) {
         // Send the raw search term (including wildcards) to the backend.
         // The Gateway sets is_discovery=True and Core's discovery path
         // handles glob-to-regex conversion (e.g. * → .* matches everything).
