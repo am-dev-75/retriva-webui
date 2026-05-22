@@ -325,6 +325,17 @@ export const DocumentList: React.FC = () => {
     loadDocuments();
   };
 
+  const handleDeleteDocument = async (docId: string) => {
+    if (!window.confirm('Are you sure you want to delete this document?')) return;
+    try {
+      await gatewayClient.deleteDocument(docId);
+      loadDocuments(); // Reload the list after deletion
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      alert('Failed to delete document');
+    }
+  };
+
   return (
     <div className="documents-container">
       <header className="page-header">
@@ -467,7 +478,11 @@ export const DocumentList: React.FC = () => {
                     <td>{formatDateShort(getRawIngestionTimestamp(doc))}</td>
                     <td>
                       <div className="actions-cell">
-                        <button className="btn-icon danger">
+                        <button 
+                          className="btn-icon danger" 
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          title="Delete Document"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>

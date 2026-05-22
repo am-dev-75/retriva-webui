@@ -46,6 +46,10 @@ class GatewayClient {
       throw new Error(`Gateway Error: ${response.statusText}`);
     }
 
+    if (response.status === 204) {
+      return null as T;
+    }
+
     return response.json();
   }
 
@@ -126,6 +130,12 @@ class GatewayClient {
     const query = kbId ? `?kb_id=${kbId}` : '';
     const response = await this.request<any>(`/gateway/documents${query}`);
     return Array.isArray(response) ? response : (response.documents || []);
+  }
+
+  async deleteDocument(docId: string): Promise<void> {
+    return this.request<void>(`/gateway/documents/${encodeURIComponent(docId)}`, {
+      method: 'DELETE',
+    });
   }
 
   async searchDocuments(
