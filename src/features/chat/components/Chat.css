@@ -76,6 +76,15 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
+.mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mode-btn:disabled:hover {
+  color: var(--color-text-muted);
+}
+
 .message-list {
   flex: 1;
   overflow-y: auto;

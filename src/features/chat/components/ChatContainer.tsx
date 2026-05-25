@@ -368,6 +368,7 @@ export const ChatContainer: React.FC = () => {
               className={`mode-btn ${filterMode === 'soft' ? 'active' : ''}`}
               onClick={() => setFilterMode('soft')}
               title={t('metadata.mode_soft')}
+              disabled={activeCount === 0}
             >
               {t('metadata.mode_soft')}
             </button>
@@ -375,6 +376,7 @@ export const ChatContainer: React.FC = () => {
               className={`mode-btn ${filterMode === 'hard' ? 'active' : ''}`}
               onClick={() => setFilterMode('hard')}
               title={t('metadata.mode_hard')}
+              disabled={activeCount === 0}
             >
               {t('metadata.mode_hard')}
             </button>
