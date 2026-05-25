@@ -22,5 +22,5 @@ export const CONFIG = {
   ENABLE_FOLDER_UPLOAD: import.meta.env.VITE_ENABLE_FOLDER_UPLOAD !== 'false',
   ENABLE_SPEECH_INPUT: import.meta.env.VITE_ENABLE_SPEECH_INPUT === 'true',
   SPEECH_INPUT_MODE: import.meta.env.VITE_SPEECH_INPUT_MODE || 'disabled',
-  APP_VERSION: '1.0.0-rc0',
+  APP_VERSION: '1.0.0-rc1',
 };
