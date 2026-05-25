@@ -405,7 +405,7 @@ export const DocumentList: React.FC = () => {
               <th>{t('documents.table.user_provided_tags')}</th>
               <th>{t('common.status')}</th>
               <th>{t('documents.table.created')}</th>
-              <th></th>
+              <th className="actions-column" style={{ width: '60px', textAlign: 'right' }}>{t('common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -476,7 +476,7 @@ export const DocumentList: React.FC = () => {
                       </span>
                     </td>
                     <td>{formatDateShort(getRawIngestionTimestamp(doc))}</td>
-                    <td>
+                    <td className="actions-column">
                       <div className="actions-cell">
                         <button 
                           className="btn-icon danger" 
