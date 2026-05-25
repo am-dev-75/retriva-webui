@@ -73,7 +73,15 @@ class GatewayClient {
       signal,
     });
 
-    if (!response.ok) throw new Error('Chat failed');
+    if (!response.ok) {
+      let errorMsg = 'Chat failed';
+      try {
+        const errorData = await response.json();
+        if (errorData.detail) errorMsg = errorData.detail;
+        else if (errorData.message) errorMsg = errorData.message;
+      } catch (e) {}
+      throw new Error(errorMsg);
+    }
 
     return response.json();
   }

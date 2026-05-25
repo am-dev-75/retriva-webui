@@ -89,10 +89,18 @@ export const ChatContainer: React.FC = () => {
         setMessages(prev => [...prev, interruptedMessage]);
       } else {
         console.error('Failed to send message:', error);
+        
+        let errorText = 'The Gateway is not reachable.';
+        if (error instanceof Error && error.message) {
+          errorText = error.message;
+        } else if (typeof error === 'string') {
+          errorText = error;
+        }
+
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: `This is a mock response because the Gateway is not reachable. I'm searching across ${selectedKbIds.length} Knowledge Base(s): ${selectedKbIds.join(', ')}.`,
+          content: `Error: ${errorText}`,
           timestamp: new Date().toISOString(),
           feedback: null,
         };
