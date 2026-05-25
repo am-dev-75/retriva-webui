@@ -305,9 +305,11 @@ export const ChatContainer: React.FC = () => {
           >
             <Filter size={20} />
           </button>
+          {/*
           <button className="composer-action" title={t('chat.attachment')}>
             <Paperclip size={20} />
           </button>
+          */}
           
           <textarea
             className="composer-textarea"
