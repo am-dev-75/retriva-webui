@@ -287,16 +287,6 @@ export const ChatContainer: React.FC = () => {
         )}
       </div>
 
-      {showFilters && (
-        <div className="chat-filters-panel">
-          <MetadataFilterManager 
-            onFilterChange={updateFilters}
-            initialFilters={activeFilters}
-            initialMode={filterMode}
-            hideMode={true}
-          />
-        </div>
-      )}
 
       <div className="chat-input-area">
         <div className="composer-container">
@@ -396,6 +386,17 @@ export const ChatContainer: React.FC = () => {
           </div>
           <p className="input-hint">{t('chat.input_hint')}</p>
         </div>
+        {showFilters && (
+          <div className="chat-filters-panel">
+            <MetadataFilterManager 
+              onFilterChange={updateFilters}
+              initialFilters={activeFilters}
+              initialMode={filterMode}
+              hideMode={true}
+            />
+          </div>
+        )}
+
         <p className="chat-disclaimer">{t('chat.disclaimer')}</p>
       </div>
     </div>
