@@ -66,7 +66,13 @@
     "upload_all": "Upload All",
     "clear_list": "Clear List",
     "confirm_clear": "Are you sure you want to clear the list of documents to be uploaded?",
-    "no_files": "No files selected"
+    "no_files": "No files selected",
+    "source_type": "Source Type",
+    "source_type_auto": "Auto-detect",
+    "source_type_mediawiki": "MediaWiki Export Snapshot",
+    "mediawiki_hint": "Files will be staged and processed as a MediaWiki XML export directory.",
+    "finalize": "Process Batch",
+    "finalizing": "Processing..."
   },
   "documents": {
     "title": "Documents",

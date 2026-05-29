@@ -105,10 +105,16 @@ class GatewayClient {
   }
 
   // Ingestion
-  async createBatch(metadata?: Record<string, any>): Promise<{ batch_id: string, status: string }> {
+  async createBatch(metadata?: Record<string, any>, source_type: string = 'auto'): Promise<{ batch_id: string, status: string }> {
     return this.request<{ batch_id: string, status: string }>('/gateway/ingestion/batches', {
       method: 'POST',
-      body: JSON.stringify({ metadata }),
+      body: JSON.stringify({ metadata, source_type }),
+    });
+  }
+
+  async finalizeBatch(batchId: string): Promise<{ job_id: string, status: string }> {
+    return this.request<{ job_id: string, status: string }>(`/gateway/ingestion/batches/${batchId}/finalize`, {
+      method: 'POST',
     });
   }
 

@@ -38,6 +38,7 @@ export const UploadPanel: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [globalMetadata, setGlobalMetadata] = useState<MetadataField[]>([]);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [sourceType, setSourceType] = useState<'auto' | 'mediawiki_export'>('auto');
 
   const addFiles = (files: FileList | null) => {
     if (!files) return;
@@ -96,30 +97,41 @@ export const UploadPanel: React.FC = () => {
       });
 
       // 2. Create the batch
-      const { batch_id } = await gatewayClient.createBatch(metadataObj);
+      const { batch_id } = await gatewayClient.createBatch(metadataObj, sourceType);
       console.log(`Created batch ${batch_id}`);
 
-      // 3. Upload files sequentially or in parallel
-      // We'll do it sequentially here for simpler error tracking, 
-      // but in a real app, you might want to chunk parallel uploads.
-      for (const fileItem of pendingFiles) {
-        if (fileItem.status === 'completed') continue; // Skip already done
+      // 3. Upload files in concurrent chunks
+      const CONCURRENCY = 15; // 15 files at a time
+      const filesToUpload = pendingFiles.filter(f => f.status !== 'completed');
+      
+      for (let i = 0; i < filesToUpload.length; i += CONCURRENCY) {
+        const chunk = filesToUpload.slice(i, i + CONCURRENCY);
+        
+        await Promise.all(chunk.map(async (fileItem) => {
+          try {
+            await gatewayClient.uploadFileToBatch(
+              batch_id, 
+              fileItem.file, 
+              fileItem.path
+            );
+            fileItem.status = 'completed';
+            fileItem.progress = 100;
+          } catch (err) {
+            console.error(`Failed to upload ${fileItem.file.name}:`, err);
+            fileItem.status = 'error';
+          }
+        }));
+        
+        // Trigger a single re-render per chunk
+        setPendingFiles((prev) => [...prev]);
+      }
 
+      if (sourceType === 'mediawiki_export') {
         try {
-          // Simulate some progress before upload finishes
-          setPendingFiles(prev => prev.map(p => p.id === fileItem.id ? { ...p, progress: 50 } : p));
-          
-          await gatewayClient.uploadFileToBatch(
-            batch_id, 
-            fileItem.file, 
-            fileItem.path,
-            // You could pass file-specific metadata here
-          );
-          
-          setPendingFiles(prev => prev.map(p => p.id === fileItem.id ? { ...p, status: 'completed', progress: 100 } : p));
+          await gatewayClient.finalizeBatch(batch_id);
+          console.log(`Finalized batch ${batch_id}`);
         } catch (err) {
-          console.error(`Failed to upload ${fileItem.file.name}:`, err);
-          setPendingFiles(prev => prev.map(p => p.id === fileItem.id ? { ...p, status: 'error' } : p));
+          console.error(`Failed to finalize batch ${batch_id}:`, err);
         }
       }
 
@@ -201,38 +213,64 @@ export const UploadPanel: React.FC = () => {
             />
           </div>
 
+          <div className="metadata-section" style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--color-border)' }}>
+            <div style={{ marginBottom: 'var(--spacing-xs)' }}>
+              <strong>{t('ingestion.source_type')}</strong>
+            </div>
+            <select 
+              value={sourceType} 
+              onChange={(e) => setSourceType(e.target.value as 'auto' | 'mediawiki_export')}
+              style={{ padding: '0.5rem', width: '100%', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}
+            >
+              <option value="auto">{t('ingestion.source_type_auto')}</option>
+              <option value="mediawiki_export">{t('ingestion.source_type_mediawiki')}</option>
+            </select>
+            {sourceType === 'mediawiki_export' && (
+              <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                {t('ingestion.mediawiki_hint')}
+              </p>
+            )}
+          </div>
+
           <div className="file-list">
             {pendingFiles.length === 0 ? (
               <div className="empty-list">{t('ingestion.no_files')}</div>
             ) : (
-              pendingFiles.map((pf) => (
-                <div key={pf.id} className={`file-item ${pf.status}`}>
-                  <div className="file-info">
-                    <File size={16} />
-                    <div className="file-details">
-                      <span className="file-name">{pf.file.name}</span>
-                      <span className="file-path">{pf.path}</span>
+              <>
+                {pendingFiles.slice(0, 100).map((pf) => (
+                  <div key={pf.id} className={`file-item ${pf.status}`}>
+                    <div className="file-info">
+                      <File size={16} />
+                      <div className="file-details">
+                        <span className="file-name">{pf.file.name}</span>
+                        <span className="file-path">{pf.path}</span>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="file-status">
-                    {pf.status === 'pending' && (
-                      <button className="btn-icon" onClick={() => removeFile(pf.id)}>
-                        <X size={16} />
-                      </button>
-                    )}
-                    {pf.status === 'uploading' && <div className="spinner-sm" />}
-                    {pf.status === 'completed' && <CheckCircle size={16} className="text-success" />}
-                    {pf.status === 'error' && <AlertCircle size={16} className="text-danger" />}
-                  </div>
+                    
+                    <div className="file-status">
+                      {pf.status === 'pending' && (
+                        <button className="btn-icon" onClick={() => removeFile(pf.id)}>
+                          <X size={16} />
+                        </button>
+                      )}
+                      {pf.status === 'uploading' && <div className="spinner-sm" />}
+                      {pf.status === 'completed' && <CheckCircle size={16} className="text-success" />}
+                      {pf.status === 'error' && <AlertCircle size={16} className="text-danger" />}
+                    </div>
 
-                  {pf.status === 'uploading' && (
-                    <div className="progress-bar">
-                      <div className="progress-fill" style={{ width: `${pf.progress}%` }} />
-                    </div>
-                  )}
-                </div>
-              ))
+                    {pf.status === 'uploading' && (
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${pf.progress}%` }} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {pendingFiles.length > 100 && (
+                  <div className="file-item summary" style={{ justifyContent: 'center', color: 'var(--color-text-muted)', padding: '1rem' }}>
+                    <span>...and {pendingFiles.length - 100} more files (showing first 100)</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
