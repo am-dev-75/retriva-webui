@@ -16,13 +16,15 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Square, User, Bot, Paperclip, Mic, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter } from 'lucide-react';
+import { Send, Square, User, Bot, Mic, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter } from 'lucide-react';
 import { Message } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
 import { CONFIG } from '../../../app/config';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
 import { MetadataFilterManager } from '../../metadata/components/MetadataFilter';
 import { useMetadataFilters } from '../../metadata/hooks/useMetadataFilters';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import './Chat.css';
 
 export const ChatContainer: React.FC = () => {
@@ -188,7 +190,11 @@ export const ChatContainer: React.FC = () => {
                 {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
               </div>
               <div className="message-content">
-                <div className="message-text">{msg.content}</div>
+                <div className="message-text markdown-content">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
                 {msg.citations && msg.citations.length > 0 && (
                   <div className="citations-list">
                     {msg.citations.map((cite) => (

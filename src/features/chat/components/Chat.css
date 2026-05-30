@@ -149,8 +149,98 @@
 
 .message-text {
   font-size: 0.9375rem;
-  white-space: pre-wrap;
+  white-space: normal;
   color: var(--color-text);
+}
+
+/* Markdown Content Styling */
+.markdown-content {
+  line-height: 1.6;
+}
+
+.markdown-content p {
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content strong {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+.markdown-content ul, 
+.markdown-content ol {
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+}
+
+.markdown-content li {
+  margin-bottom: 0.25rem;
+}
+
+.markdown-content pre {
+  background-color: var(--color-surface-muted);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--color-border);
+}
+
+.markdown-content code {
+  background-color: var(--color-surface-muted);
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85em;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+  font-size: 0.9em;
+}
+
+.markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.markdown-content h1 { font-size: 1.5em; }
+.markdown-content h2 { font-size: 1.3em; }
+.markdown-content h3 { font-size: 1.1em; }
+
+.markdown-content blockquote {
+  border-left: 4px solid var(--color-primary);
+  padding-left: 1rem;
+  color: var(--color-text-muted);
+  margin-left: 0;
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content th, .markdown-content td {
+  border: 1px solid var(--color-border);
+  padding: 0.5rem;
+}
+
+.markdown-content th {
+  background-color: var(--color-surface-muted);
+  font-weight: 600;
 }
 
 .citations-list {
