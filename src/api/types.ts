@@ -95,3 +95,8 @@ export interface MetadataFilter {
   operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'exists';
   value: any;
 }
+
+export interface SystemStatusResponse {
+  jobs: Record<string, number>;
+  staged_files: number;
+}

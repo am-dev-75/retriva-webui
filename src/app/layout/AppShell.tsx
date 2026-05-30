@@ -24,6 +24,7 @@ import {
   Upload, 
   FileText, 
   Settings,
+  Activity,
   Menu,
   X,
   ChevronDown,
@@ -40,6 +41,7 @@ const getNavItems = (t: any) => [
   { path: '/documents', icon: Files, label: t('nav.documents') },
   { path: '/ingestion', icon: Upload, label: t('nav.ingestion') },
   { path: '/artifacts', icon: FileText, label: t('nav.artifacts') },
+  { path: '/status', icon: Activity, label: t('status_page.title') },
   { path: '/settings', icon: Settings, label: t('nav.settings') },
 ];
 

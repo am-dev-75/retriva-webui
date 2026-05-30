@@ -132,5 +132,19 @@
       "subtitle": "Voice dictation features are currently disabled in this version.",
       "enable": "Enable Voice Input"
     }
+  },
+  "status_page": {
+    "title": "System Status",
+    "subtitle": "Monitor Retriva Gateway and Core backend health.",
+    "jobs_summary": "Jobs Summary",
+    "staged_files": "Staged Files",
+    "staged_files_desc": "Files waiting to be ingested in Gateway",
+    "enqueued": "Enqueued",
+    "processing": "Processing",
+    "completed": "Completed",
+    "failed": "Failed",
+    "refresh": "Refresh",
+    "auto_refresh": "Auto-refresh (5s)",
+    "last_updated": "Last updated"
   }
 }

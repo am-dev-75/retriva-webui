@@ -26,6 +26,7 @@ import { UploadPanel } from './features/ingestion/components/UploadPanel';
 import { DocumentList } from './features/documents/components/DocumentList';
 import { ArtifactList } from './features/artifacts/components/ArtifactList';
 import { SettingsPage } from './features/settings/components/SettingsPage';
+import { StatusPage } from './features/status/components/StatusPage';
 
 // Lazy load or placeholder features
 const ChatPage = () => <ChatContainer />;
@@ -34,6 +35,7 @@ const DocumentsPage = () => <DocumentList />;
 const IngestionPage = () => <UploadPanel />;
 const ArtifactsPage = () => <ArtifactList />;
 const SettingsPagePlaceholder = () => <SettingsPage />;
+const StatusPageWrapper = () => <StatusPage />;
 
 function App() {
   return (
@@ -48,6 +50,7 @@ function App() {
                 <Route path="documents" element={<DocumentsPage />} />
                 <Route path="ingestion" element={<IngestionPage />} />
                 <Route path="artifacts" element={<ArtifactsPage />} />
+                <Route path="status" element={<StatusPageWrapper />} />
                 <Route path="settings" element={<SettingsPagePlaceholder />} />
               </Route>
             </Routes>

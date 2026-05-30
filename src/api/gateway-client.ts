@@ -23,7 +23,8 @@ import {
   MetadataSchemaResponse,
   MetadataValuesResponse,
   MetadataFilter,
-  MetadataFilterMode
+  MetadataFilterMode,
+  SystemStatusResponse
 } from './types';
 
 class GatewayClient {
@@ -200,6 +201,10 @@ class GatewayClient {
   // Artifacts
   async getArtifacts(): Promise<Artifact[]> {
     return this.request<Artifact[]>('/gateway/artifacts');
+  }
+  // System Status
+  async getSystemStatus(): Promise<SystemStatusResponse> {
+    return this.request<SystemStatusResponse>('/gateway/system/status');
   }
 }
 
