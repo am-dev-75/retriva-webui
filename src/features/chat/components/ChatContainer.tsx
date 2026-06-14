@@ -16,7 +16,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Square, User, Bot, Mic, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter } from 'lucide-react';
+import { Send, Square, User, Bot, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter } from 'lucide-react';
 import { Message } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
 import { CONFIG } from '../../../app/config';
@@ -25,6 +25,7 @@ import { MetadataFilterManager } from '../../metadata/components/MetadataFilter'
 import { useMetadataFilters } from '../../metadata/hooks/useMetadataFilters';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { VoiceInputButton } from './VoiceInputButton';
 import './Chat.css';
 
 export const ChatContainer: React.FC = () => {
@@ -34,6 +35,7 @@ export const ChatContainer: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [sttLanguage, setSttLanguage] = useState<'en' | 'it'>('en');
   const { 
     filters: activeFilters, 
     mode: filterMode, 
@@ -78,8 +80,9 @@ export const ChatContainer: React.FC = () => {
         controller.signal
       );
       setMessages(prev => [...prev, { ...response, feedback: null }]);
-    } catch (error: any) {
-      if (error?.name === 'AbortError') {
+    } catch (error: unknown) {
+      const err = error as Error;
+      if (err?.name === 'AbortError') {
         // User interrupted the request
         const interruptedMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -335,11 +338,22 @@ export const ChatContainer: React.FC = () => {
             rows={1}
           />
 
-          {CONFIG.ENABLE_SPEECH_INPUT && (
-            <button className="composer-action speech-btn" title={t('chat.voice_input')} disabled>
-              <Mic size={20} />
-            </button>
-          )}
+          <VoiceInputButton 
+            gatewayBaseUrl={CONFIG.GATEWAY_BASE_URL}
+            language={sttLanguage}
+            onTranscript={(text) => {
+              setInput(current => {
+                const currentTrimmed = current.trim();
+                const transcriptTrimmed = text.trim();
+
+                if (!transcriptTrimmed) return current;
+                if (!currentTrimmed) return transcriptTrimmed;
+
+                return `${currentTrimmed} ${transcriptTrimmed}`;
+              });
+            }}
+            disabled={isLoading}
+          />
 
           {!isLoading && hasUserMessages && (
             <button
@@ -370,7 +384,7 @@ export const ChatContainer: React.FC = () => {
           )}
         </div>
 
-        <div className="mode-selector-container">
+        <div className="mode-selector-container" style={{ justifyContent: 'space-between' }}>
           <div className="mode-selector">
             <button 
               className={`mode-btn ${filterMode === 'soft' ? 'active' : ''}`}
@@ -387,6 +401,22 @@ export const ChatContainer: React.FC = () => {
               disabled={activeCount === 0}
             >
               {t('metadata.mode_hard')}
+            </button>
+          </div>
+          <div className="mode-selector">
+            <button 
+              className={`mode-btn ${sttLanguage === 'en' ? 'active' : ''}`}
+              onClick={() => setSttLanguage('en')}
+              title="English Dictation"
+            >
+              EN
+            </button>
+            <button 
+              className={`mode-btn ${sttLanguage === 'it' ? 'active' : ''}`}
+              onClick={() => setSttLanguage('it')}
+              title="Italian Dictation"
+            >
+              ITA
             </button>
           </div>
         </div>

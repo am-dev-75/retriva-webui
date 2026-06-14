@@ -22,6 +22,17 @@ npm run dev
 
 The application will be available at `http://localhost:5173`.
 
+## Features
+
+### Voice Dictation
+
+Retriva WebUI supports voice dictation for user queries. This feature allows users to record their voice and insert the transcription directly into the query input field.
+
+- **Configuration**: This feature is enabled by default in local development. To manually enable it in production, set `VITE_RETRIVA_ENABLE_VOICE_INPUT=true` in your `.env` file.
+- **Backend Dependency**: Dictation requires the Gateway's `/stt/transcribe` endpoint to process the audio. No direct calls are made to Whisper from the browser.
+- **Privacy & Storage**: No audio is stored locally by the WebUI.
+- **Query Submission**: Voice dictation only inserts the text into the chat input. It does *not* automatically submit the query, allowing you to review or edit the text before sending.
+
 ## Implemetation notes
 
 ### React + TypeScript + Vite

@@ -20,7 +20,9 @@ export const CONFIG = {
   ENABLE_AUTH: import.meta.env.VITE_ENABLE_AUTH === 'true',
   ENABLE_ARTIFACTS: import.meta.env.VITE_ENABLE_ARTIFACTS !== 'false',
   ENABLE_FOLDER_UPLOAD: import.meta.env.VITE_ENABLE_FOLDER_UPLOAD !== 'false',
-  ENABLE_SPEECH_INPUT: import.meta.env.VITE_ENABLE_SPEECH_INPUT === 'true',
+  ENABLE_SPEECH_INPUT: import.meta.env.VITE_RETRIVA_ENABLE_VOICE_INPUT !== undefined 
+    ? import.meta.env.VITE_RETRIVA_ENABLE_VOICE_INPUT === 'true'
+    : import.meta.env.DEV,
   SPEECH_INPUT_MODE: import.meta.env.VITE_SPEECH_INPUT_MODE || 'disabled',
   APP_VERSION: '1.0.0-rc2',
 };

@@ -80,7 +80,37 @@ class GatewayClient {
         const errorData = await response.json();
         if (errorData.detail) errorMsg = errorData.detail;
         else if (errorData.message) errorMsg = errorData.message;
-      } catch (e) {}
+      } catch {
+        // ignore JSON parse error
+      }
+      throw new Error(errorMsg);
+    }
+
+    return response.json();
+  }
+
+  // Speech to Text
+  async transcribeAudio(file: Blob, language: string = 'auto'): Promise<{ text: string }> {
+    const formData = new FormData();
+    formData.append('file', file, 'query.webm');
+    if (language) {
+      formData.append('language', language);
+    }
+
+    const response = await fetch(`${this.baseUrl}/stt/transcribe`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let errorMsg = 'Transcription failed';
+      try {
+        const errorData = await response.json();
+        if (errorData.detail) errorMsg = errorData.detail;
+        else if (errorData.message) errorMsg = errorData.message;
+      } catch {
+        // ignore JSON parse error
+      }
       throw new Error(errorMsg);
     }
 
