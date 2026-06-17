@@ -22,7 +22,7 @@ import { AppShell } from './app/layout/AppShell';
 
 import { ChatContainer } from './features/chat/components/ChatContainer';
 import { KBList } from './features/knowledge-bases/components/KBList';
-import { UploadPanel } from './features/ingestion/components/UploadPanel';
+import { IngestionLanding } from './features/ingestion/components/IngestionLanding';
 import { DocumentList } from './features/documents/components/DocumentList';
 import { ArtifactList } from './features/artifacts/components/ArtifactList';
 import { SettingsPage } from './features/settings/components/SettingsPage';
@@ -32,7 +32,7 @@ import { StatusPage } from './features/status/components/StatusPage';
 const ChatPage = () => <ChatContainer />;
 const KBPage = () => <KBList />;
 const DocumentsPage = () => <DocumentList />;
-const IngestionPage = () => <UploadPanel />;
+const IngestionPage = () => <IngestionLanding />;
 const ArtifactsPage = () => <ArtifactList />;
 const SettingsPagePlaceholder = () => <SettingsPage />;
 const StatusPageWrapper = () => <StatusPage />;

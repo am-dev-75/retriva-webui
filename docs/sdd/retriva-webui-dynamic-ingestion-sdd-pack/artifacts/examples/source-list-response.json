@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "source_id": "src_example",
+      "connector_type": "mediawiki",
+      "display_name": "R&D MediaWiki",
+      "target_kb_id": "rd_mediawiki",
+      "status": "BASELINE_RUNNING",
+      "last_sync_at": null,
+      "next_sync_at": null,
+      "processed_items": 3420,
+      "failed_items": 0
+    }
+  ]
+}

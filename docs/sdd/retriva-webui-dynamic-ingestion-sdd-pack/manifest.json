@@ -1,0 +1,13 @@
+{
+  "name": "retriva-webui-dynamic-ingestion-sdd-pack",
+  "created_at": "2026-06-17T19:20:00+02:00",
+  "purpose": "Google Antigravity SDD pack for adding dynamic ingestion / Connected Sources support to Retriva WebUI",
+  "workflows": [
+    "/define",
+    "/architect",
+    "/execute",
+    "/verify"
+  ],
+  "feature": "Dynamic ingestion UI / Connected Sources / MediaWiki first source type",
+  "target_repo": "retriva-webui"
+}

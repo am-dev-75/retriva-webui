@@ -100,3 +100,58 @@ export interface SystemStatusResponse {
   jobs: Record<string, number>;
   staged_files: number;
 }
+
+export type ConnectorType = 'mediawiki' | string;
+
+export type SourceStatus = 'CREATED' | 'VALIDATING_CONNECTION' | 'BASELINE_PENDING' | 'BASELINE_RUNNING' | 'CATCHUP_RUNNING' | 'ACTIVE' | 'PAUSED' | 'DEGRADED' | 'FAILED' | 'DELETING' | 'DELETED';
+
+export interface MediaWikiSourceConfig {
+  api_url: string;
+  auth_mode: 'bot_password' | 'oauth' | 'none';
+  allowed_namespaces?: number[];
+  include_categories?: string[];
+  exclude_categories?: string[];
+  sync_interval_minutes?: number;
+  delete_policy?: 'soft_delete' | 'hard_delete';
+  availability_policy?: 'hide_until_initial_sync_complete' | 'immediate';
+  metadata?: Record<string, string>;
+}
+
+export interface ConnectedSource extends MediaWikiSourceConfig {
+  id: string;
+  display_name: string;
+  connector_type: ConnectorType;
+  target_kb_id: string;
+  status: SourceStatus;
+  last_sync_at?: string;
+  next_sync_at?: string;
+  indexed_item_count: number;
+  failed_item_count: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface CreateSourceRequest extends MediaWikiSourceConfig {
+  display_name: string;
+  connector_type: ConnectorType;
+  target_kb_id: string;
+  credentials?: string;
+}
+
+export interface SourceRun {
+  id: string;
+  source_id: string;
+  status: SourceStatus;
+  started_at: string;
+  completed_at?: string;
+  items_processed: number;
+  items_failed: number;
+  error_message?: string;
+}
+
+export interface SourceStatusSummary {
+  source_id: string;
+  status: SourceStatus;
+  indexed_item_count: number;
+  failed_item_count: number;
+}

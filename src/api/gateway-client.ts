@@ -24,7 +24,10 @@ import {
   MetadataValuesResponse,
   MetadataFilter,
   MetadataFilterMode,
-  SystemStatusResponse
+  SystemStatusResponse,
+  ConnectedSource,
+  CreateSourceRequest,
+  SourceRun
 } from './types';
 
 class GatewayClient {
@@ -235,6 +238,56 @@ class GatewayClient {
   // System Status
   async getSystemStatus(): Promise<SystemStatusResponse> {
     return this.request<SystemStatusResponse>('/gateway/system/status');
+  }
+  // Connected Sources
+  async getSources(): Promise<ConnectedSource[]> {
+    return this.request<ConnectedSource[]>('/gateway/sources');
+  }
+
+  async getSource(sourceId: string): Promise<ConnectedSource> {
+    return this.request<ConnectedSource>(`/gateway/sources/${sourceId}`);
+  }
+
+  async createSource(sourceData: CreateSourceRequest): Promise<ConnectedSource> {
+    return this.request<ConnectedSource>('/gateway/sources', {
+      method: 'POST',
+      body: JSON.stringify(sourceData),
+    });
+  }
+
+  async updateSource(sourceId: string, sourceData: Partial<ConnectedSource>): Promise<ConnectedSource> {
+    return this.request<ConnectedSource>(`/gateway/sources/${sourceId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(sourceData),
+    });
+  }
+
+  async deleteSource(sourceId: string): Promise<void> {
+    return this.request<void>(`/gateway/sources/${sourceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async syncSource(sourceId: string): Promise<void> {
+    return this.request<void>(`/gateway/sources/${sourceId}/sync`, {
+      method: 'POST',
+    });
+  }
+
+  async pauseSource(sourceId: string): Promise<void> {
+    return this.request<void>(`/gateway/sources/${sourceId}/pause`, {
+      method: 'POST',
+    });
+  }
+
+  async resumeSource(sourceId: string): Promise<void> {
+    return this.request<void>(`/gateway/sources/${sourceId}/resume`, {
+      method: 'POST',
+    });
+  }
+
+  async getSourceRuns(sourceId: string): Promise<SourceRun[]> {
+    return this.request<SourceRun[]>(`/gateway/sources/${sourceId}/runs`);
   }
 }
 
