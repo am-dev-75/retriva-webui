@@ -1,3 +1,19 @@
+/**
+ * Copyright (C) 2026 Andrea Marson (am.dev.75@gmail.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { gatewayClient } from '../../../api/gateway-client';
 import { ConnectedSource } from '../../../api/types';
@@ -46,7 +62,7 @@ export const ConnectedSourcesList: React.FC = () => {
   return (
     <div className="sources-list-container">
       <div className="sources-list-header">
-        <h2>Connected Sources</h2>
+        <h2>Dynamic Ingestion</h2>
         <div className="sources-actions">
           <button className="btn-secondary" onClick={fetchSources} disabled={isLoading}>
             <RefreshCw size={16} className={isLoading ? 'spinning' : ''} />
