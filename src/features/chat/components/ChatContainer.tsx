@@ -16,7 +16,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Square, User, Bot, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter } from 'lucide-react';
+import { Send, Square, User, Bot, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter, Mic } from 'lucide-react';
 import { Message } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
 import { CONFIG } from '../../../app/config';
@@ -403,20 +403,22 @@ export const ChatContainer: React.FC = () => {
               {t('metadata.mode_hard')}
             </button>
           </div>
-          <div className="mode-selector">
+          <div className="mode-selector" title="Dictation Language">
             <button 
               className={`mode-btn ${sttLanguage === 'en' ? 'active' : ''}`}
               onClick={() => setSttLanguage('en')}
               title="English Dictation"
+              style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
             >
-              EN
+              <Mic size={14} /> EN
             </button>
             <button 
               className={`mode-btn ${sttLanguage === 'it' ? 'active' : ''}`}
               onClick={() => setSttLanguage('it')}
               title="Italian Dictation"
+              style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
             >
-              ITA
+              <Mic size={14} /> ITA
             </button>
           </div>
         </div>
