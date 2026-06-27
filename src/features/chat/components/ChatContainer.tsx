@@ -17,7 +17,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Send, Square, User, Bot, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter, Mic } from 'lucide-react';
-import { Message } from '../../../api/types';
+import { Message, Citation } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
 import { CONFIG } from '../../../app/config';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
@@ -169,6 +169,15 @@ export const ChatContainer: React.FC = () => {
     return null;
   }, [messages]);
 
+  const formatCitations = useCallback((citations?: Citation[]): string => {
+    if (!citations || citations.length === 0) return '';
+    const lines = citations.map((cite) => {
+      const page = cite.page ? ` — Page ${cite.page}` : '';
+      return `[${cite.id}] ${cite.filename}${page}`;
+    });
+    return `\n\nSources:\n${lines.join('\n')}`;
+  }, []);
+
   const hasUserMessages = messages.some(msg => msg.role === 'user');
 
   return (
@@ -248,7 +257,7 @@ export const ChatContainer: React.FC = () => {
                       <>
                         <button
                           className="action-btn copy-btn"
-                          onClick={() => copyToClipboard(msg.content)}
+                          onClick={() => copyToClipboard(msg.content + formatCitations(msg.citations))}
                           title={t('chat.copy_response')}
                         >
                           <Copy size={14} />
@@ -257,9 +266,10 @@ export const ChatContainer: React.FC = () => {
                           className="action-btn copy-btn"
                           onClick={() => {
                             const query = getPrecedingQuery(index);
+                            const answer = msg.content + formatCitations(msg.citations);
                             const text = query
-                              ? `Q: ${query}\n\nA: ${msg.content}`
-                              : msg.content;
+                              ? `Q: ${query}\n\nA: ${answer}`
+                              : answer;
                             copyToClipboard(text);
                           }}
                           title={t('chat.copy_qa')}
