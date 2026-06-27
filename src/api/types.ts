@@ -101,6 +101,26 @@ export interface SystemStatusResponse {
   staged_files: number;
 }
 
+export interface JobSummary {
+  job_id: string;
+  status: string;
+  source: string;
+  job_type: string;
+  current_stage?: string | null;
+  stages_completed: string[];
+  stage_detail?: string | null;
+  progress?: number | null;
+  created_at: string;
+  updated_at: string;
+  error?: string | null;
+}
+
+export interface SystemStatusDetailResponse {
+  jobs: Record<string, number>;
+  staged_files: number;
+  job_list: JobSummary[];
+}
+
 export type ConnectorType = 'mediawiki' | string;
 
 export type SourceStatus = 'CREATED' | 'VALIDATING_CONNECTION' | 'BASELINE_PENDING' | 'BASELINE_RUNNING' | 'CATCHUP_RUNNING' | 'ACTIVE' | 'PAUSED' | 'DEGRADED' | 'FAILED' | 'DELETING' | 'DELETED';

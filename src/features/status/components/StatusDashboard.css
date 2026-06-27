@@ -1,0 +1,540 @@
+/**
+ * Copyright (C) 2026 Andrea Marson (am.dev.75@gmail.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* ── Dashboard Layout ─────────────────────────────────────────── */
+
+.dashboard-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.dashboard-header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.dashboard-header p {
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-xs);
+  font-size: 0.9375rem;
+}
+
+.dashboard-controls {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.dashboard-controls .last-updated {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.auto-refresh-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+/* ── Stat Cards Row ────────────────────────────────────────────── */
+
+.stat-cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.stat-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.stat-card.active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.stat-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat-card-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-card-footer {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.stat-card .accent-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.stat-card.enqueued .accent-bar { background-color: var(--color-text-muted); }
+.stat-card.processing .accent-bar { background-color: var(--color-primary); }
+.stat-card.completed .accent-bar { background-color: var(--color-success); }
+.stat-card.failed .accent-bar { background-color: var(--color-danger); }
+.stat-card.staged .accent-bar { background-color: var(--color-warning); }
+
+/* ── Panel (Portainer-style card) ─────────────────────────────── */
+
+.panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--spacing-lg);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface-muted);
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.panel-header .panel-count {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.panel-body {
+  padding: 0;
+}
+
+/* ── Jobs Table ───────────────────────────────────────────────── */
+
+.jobs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.jobs-table thead th {
+  text-align: left;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.jobs-table tbody td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.jobs-table tbody tr {
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.jobs-table tbody tr:hover {
+  background-color: var(--color-surface-muted);
+}
+
+.jobs-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.job-source {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.8125rem;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.job-id {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Status Badges ─────────────────────────────────────────────── */
+
+.job-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.job-status-badge.pending,
+.job-status-badge.enqueued {
+  background-color: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.job-status-badge.running,
+.job-status-badge.processing {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: var(--color-primary);
+}
+
+.job-status-badge.cancelling {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+}
+
+.job-status-badge.completed {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--color-success);
+}
+
+.job-status-badge.failed,
+.job-status-badge.cancelled {
+  background-color: rgba(220, 38, 38, 0.15);
+  color: var(--color-danger);
+}
+
+/* ── Stage Progress ───────────────────────────────────────────── */
+
+.stage-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.stage-progress-bar {
+  flex: 1;
+  height: 6px;
+  background-color: var(--color-surface-muted);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 80px;
+}
+
+.stage-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  background-color: var(--color-primary);
+}
+
+.stage-progress-fill.completed {
+  background-color: var(--color-success);
+}
+
+.stage-progress-fill.failed {
+  background-color: var(--color-danger);
+}
+
+.stage-progress-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  min-width: 35px;
+  text-align: right;
+}
+
+.stage-detail {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ── Pipeline Stage Tracker ───────────────────────────────────── */
+
+.pipeline-tracker {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+  padding: var(--spacing-md);
+}
+
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.8125rem;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.pipeline-step.done {
+  color: var(--color-success);
+}
+
+.pipeline-step.current {
+  color: var(--color-primary);
+  font-weight: 600;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.pipeline-step.pending {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+.pipeline-step .step-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pipeline-connector {
+  width: 24px;
+  height: 2px;
+  background-color: var(--color-border);
+}
+
+.pipeline-connector.done {
+  background-color: var(--color-success);
+}
+
+/* ── Job Detail Drawer ────────────────────────────────────────── */
+
+.job-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 900;
+  backdrop-filter: blur(2px);
+  animation: fadeIn var(--transition-fast);
+}
+
+.job-detail-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 560px;
+  max-width: 90vw;
+  background-color: var(--color-bg);
+  border-left: 1px solid var(--color-border);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight var(--transition-base);
+  overflow-y: auto;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.drawer-header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.drawer-header .drawer-subtitle {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-xs);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.drawer-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.drawer-close:hover {
+  background-color: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.drawer-body {
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.detail-section h3 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-item .label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.detail-item .value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.detail-item .value.mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.8125rem;
+}
+
+.error-box {
+  background-color: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.8125rem;
+  color: var(--color-danger);
+  word-break: break-all;
+}
+
+/* ── Empty State ───────────────────────────────────────────────── */
+
+.empty-state {
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+/* ── Loading Spinner ──────────────────────────────────────────── */
+
+.dashboard-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-muted);
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: var(--spacing-md);
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+
+  .stat-cards-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .jobs-table {
+    font-size: 0.75rem;
+  }
+
+  .jobs-table thead th,
+  .jobs-table tbody td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .job-detail-drawer {
+    width: 100vw;
+  }
+}

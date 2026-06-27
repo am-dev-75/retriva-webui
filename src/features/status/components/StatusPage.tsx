@@ -14,25 +14,43 @@
  * limitations under the License.
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, Activity, Layers, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import {
+  RefreshCw, Layers, Clock, CheckCircle, AlertCircle, Loader,
+  FileText, ChevronRight,
+} from 'lucide-react';
 import { gatewayClient } from '../../../api/gateway-client';
-import { SystemStatusResponse } from '../../../api/types';
+import { SystemStatusDetailResponse, JobSummary } from '../../../api/types';
+import { JobDetailDrawer } from './JobDetailDrawer';
+import './StatusDashboard.css';
+
+type FilterCategory = 'all' | 'enqueued' | 'processing' | 'completed' | 'failed';
+
+const STATUS_TO_CATEGORY: Record<string, FilterCategory> = {
+  pending: 'enqueued',
+  running: 'processing',
+  cancelling: 'processing',
+  completed: 'completed',
+  failed: 'failed',
+  cancelled: 'failed',
+};
 
 export const StatusPage: React.FC = () => {
   const { t } = useTranslation();
-  const [status, setStatus] = useState<SystemStatusResponse | null>(null);
+  const [detail, setDetail] = useState<SystemStatusDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
+  const [selectedJob, setSelectedJob] = useState<JobSummary | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await gatewayClient.getSystemStatus();
-      setStatus(data);
+      const data = await gatewayClient.getSystemStatusDetail();
+      setDetail(data);
       setLastUpdated(new Date());
       setError(null);
     } catch (err: any) {
@@ -49,94 +67,241 @@ export const StatusPage: React.FC = () => {
   useEffect(() => {
     let interval: any;
     if (autoRefresh) {
-      interval = setInterval(() => {
-        fetchStatus();
-      }, 5000);
+      interval = setInterval(() => { fetchStatus(); }, 3000);
     }
     return () => clearInterval(interval);
   }, [autoRefresh, fetchStatus]);
 
+  // Keep selected job updated with latest data
+  useEffect(() => {
+    if (selectedJob && detail) {
+      const updated = detail.job_list.find((j) => j.job_id === selectedJob.job_id);
+      if (updated && JSON.stringify(updated) !== JSON.stringify(selectedJob)) {
+        setSelectedJob(updated);
+      }
+    }
+  }, [detail, selectedJob]);
+
+  const filteredJobs = useMemo(() => {
+    if (!detail) return [];
+    const sorted = [...detail.job_list].sort((a, b) =>
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    );
+    if (activeFilter === 'all') return sorted;
+    return sorted.filter((j) => STATUS_TO_CATEGORY[j.status] === activeFilter);
+  }, [detail, activeFilter]);
+
+  const counts = detail?.jobs || { enqueued: 0, processing: 0, completed: 0, failed: 0 };
+
+  const handleCardClick = (cat: FilterCategory) => {
+    setActiveFilter((prev) => (prev === cat ? 'all' : cat));
+  };
+
+  const formatTime = (iso: string) => {
+    try { return new Date(iso).toLocaleTimeString(); } catch { return iso; }
+  };
+
+  const getProgressPct = (job: JobSummary): number | null => {
+    if (job.progress !== null && job.progress !== undefined) return job.progress;
+    if (job.status === 'completed') return 100;
+    if (job.status === 'failed' || job.status === 'cancelled') return 0;
+    return null;
+  };
+
   return (
-    <div className="page-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: 'var(--spacing-xl)' }}>
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xl)' }}>
+    <div className="dashboard-page">
+      {/* Header */}
+      <header className="dashboard-header">
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 600, margin: 0 }}>{t('status_page.title')}</h1>
-          <p style={{ color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>{t('status_page.subtitle')}</p>
+          <h1>{t('status_page.title', 'Operations Dashboard')}</h1>
+          <p>{t('status_page.subtitle', 'Monitor ingestion jobs and system health')}</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div className="dashboard-controls">
           {lastUpdated && (
-            <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-              {t('status_page.last_updated')}: {lastUpdated.toLocaleTimeString()}
+            <span className="last-updated">
+              {t('status_page.last_updated', 'Last updated')}: {lastUpdated.toLocaleTimeString()}
             </span>
           )}
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', cursor: 'pointer' }}>
-            <input 
-              type="checkbox" 
-              checked={autoRefresh} 
-              onChange={(e) => setAutoRefresh(e.target.checked)} 
+          <label className="auto-refresh-toggle">
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(e) => setAutoRefresh(e.target.checked)}
             />
-            {t('status_page.auto_refresh')}
+            {t('status_page.auto_refresh', 'Auto-refresh')}
           </label>
-          <button 
-            className="btn btn-ghost" 
-            onClick={fetchStatus}
-            disabled={loading}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            <RefreshCw size={18} className={loading ? 'spinning' : ''} />
-            {t('status_page.refresh')}
+          <button className="btn btn-ghost" onClick={fetchStatus} disabled={loading}>
+            <RefreshCw size={16} className={loading ? 'spinning' : ''} />
+            {t('status_page.refresh', 'Refresh')}
           </button>
         </div>
       </header>
 
       {error && (
-        <div style={{ backgroundColor: 'var(--color-danger)', color: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+        <div className="error-box" style={{ marginBottom: 'var(--spacing-md)' }}>
           {error}
         </div>
       )}
 
-      {status && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-          {/* Staged Files */}
-          <div className="status-card" style={{ backgroundColor: 'var(--color-surface)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--color-text-muted)' }}>
-              <Layers size={24} />
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 500 }}>{t('status_page.staged_files')}</h3>
-            </div>
-            <div style={{ fontSize: '3rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-              {status.staged_files}
-            </div>
-            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{t('status_page.staged_files_desc')}</p>
+      {/* Stat Cards */}
+      <div className="stat-cards-row">
+        <div
+          className={`stat-card staged ${activeFilter === 'all' ? 'active' : ''}`}
+          onClick={() => handleCardClick('all')}
+        >
+          <div className="accent-bar" />
+          <div className="stat-card-header">
+            <Layers size={16} /> {t('status_page.staged_files', 'Staged Files')}
           </div>
-
-          {/* Jobs */}
-          <div className="status-card" style={{ backgroundColor: 'var(--color-surface)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--color-text-muted)' }}>
-              <Activity size={24} />
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 500 }}>{t('status_page.jobs_summary')}</h3>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={16} color="var(--color-text-muted)"/> {t('status_page.enqueued')}</span>
-                <span style={{ fontWeight: 600 }}>{status.jobs?.enqueued || 0}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><RefreshCw size={16} color="var(--color-primary)"/> {t('status_page.processing')}</span>
-                <span style={{ fontWeight: 600 }}>{status.jobs?.processing || 0}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle size={16} color="var(--color-success)"/> {t('status_page.completed')}</span>
-                <span style={{ fontWeight: 600 }}>{status.jobs?.completed || 0}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><AlertCircle size={16} color="var(--color-danger)"/> {t('status_page.failed')}</span>
-                <span style={{ fontWeight: 600 }}>{status.jobs?.failed || 0}</span>
-              </div>
-            </div>
-          </div>
+          <div className="stat-card-value">{detail?.staged_files ?? 0}</div>
+          <div className="stat-card-footer">awaiting ingestion</div>
         </div>
-      )}
+
+        <div
+          className={`stat-card enqueued ${activeFilter === 'enqueued' ? 'active' : ''}`}
+          onClick={() => handleCardClick('enqueued')}
+        >
+          <div className="accent-bar" />
+          <div className="stat-card-header">
+            <Clock size={16} /> {t('status_page.enqueued', 'Enqueued')}
+          </div>
+          <div className="stat-card-value">{counts.enqueued || 0}</div>
+          <div className="stat-card-footer">in queue</div>
+        </div>
+
+        <div
+          className={`stat-card processing ${activeFilter === 'processing' ? 'active' : ''}`}
+          onClick={() => handleCardClick('processing')}
+        >
+          <div className="accent-bar" />
+          <div className="stat-card-header">
+            <Loader size={16} /> {t('status_page.processing', 'Processing')}
+          </div>
+          <div className="stat-card-value">{counts.processing || 0}</div>
+          <div className="stat-card-footer">active jobs</div>
+        </div>
+
+        <div
+          className={`stat-card completed ${activeFilter === 'completed' ? 'active' : ''}`}
+          onClick={() => handleCardClick('completed')}
+        >
+          <div className="accent-bar" />
+          <div className="stat-card-header">
+            <CheckCircle size={16} /> {t('status_page.completed', 'Completed')}
+          </div>
+          <div className="stat-card-value">{counts.completed || 0}</div>
+          <div className="stat-card-footer">successfully ingested</div>
+        </div>
+
+        <div
+          className={`stat-card failed ${activeFilter === 'failed' ? 'active' : ''}`}
+          onClick={() => handleCardClick('failed')}
+        >
+          <div className="accent-bar" />
+          <div className="stat-card-header">
+            <AlertCircle size={16} /> {t('status_page.failed', 'Failed')}
+          </div>
+          <div className="stat-card-value">{counts.failed || 0}</div>
+          <div className="stat-card-footer">errors / cancelled</div>
+        </div>
+      </div>
+
+      {/* Jobs Table Panel */}
+      <div className="panel">
+        <div className="panel-header">
+          <h2>
+            <FileText size={18} />
+            {activeFilter === 'all'
+              ? 'All Jobs'
+              : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Jobs`}
+            <span className="panel-count">({filteredJobs.length})</span>
+          </h2>
+          {activeFilter !== 'all' && (
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: '0.8125rem', padding: '4px 12px' }}
+              onClick={() => setActiveFilter('all')}
+            >
+              Clear filter
+            </button>
+          )}
+        </div>
+        <div className="panel-body">
+          {loading && !detail ? (
+            <div className="dashboard-loading">
+              <Loader size={20} className="spinning" /> Loading jobs...
+            </div>
+          ) : filteredJobs.length === 0 ? (
+            <div className="empty-state">
+              No jobs {activeFilter !== 'all' ? `in "${activeFilter}" state` : ''}.
+            </div>
+          ) : (
+            <table className="jobs-table">
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Status</th>
+                  <th>Stage</th>
+                  <th>Progress</th>
+                  <th>Updated</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredJobs.map((job) => {
+                  const pct = getProgressPct(job);
+                  return (
+                    <tr key={job.job_id} onClick={() => setSelectedJob(job)}>
+                      <td>
+                        <div className="job-source">{job.source.split('/').pop() || job.source}</div>
+                        <div className="job-id">{job.job_id.substring(0, 12)}…</div>
+                      </td>
+                      <td>
+                        <span className={`job-status-badge ${job.status}`}>
+                          {job.status === 'running' && <Loader size={11} className="spinning" />}
+                          {job.status === 'completed' && <CheckCircle size={11} />}
+                          {job.status === 'failed' && <AlertCircle size={11} />}
+                          {job.status}
+                        </span>
+                      </td>
+                      <td>
+                        {job.current_stage || '—'}
+                        {job.stage_detail && (
+                          <div className="stage-detail">{job.stage_detail}</div>
+                        )}
+                      </td>
+                      <td style={{ minWidth: '120px' }}>
+                        {pct !== null ? (
+                          <div className="stage-progress">
+                            <div className="stage-progress-bar">
+                              <div
+                                className={`stage-progress-fill ${job.status === 'completed' ? 'completed' : job.status === 'failed' ? 'failed' : ''}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="stage-progress-label">{pct}%</span>
+                          </div>
+                        ) : (
+                          <span className="stage-detail">—</span>
+                        )}
+                      </td>
+                      <td style={{ whiteSpace: 'nowrap', color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
+                        {formatTime(job.updated_at)}
+                      </td>
+                      <td>
+                        <ChevronRight size={16} color="var(--color-text-muted)" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {/* Job Detail Drawer */}
+      <JobDetailDrawer job={selectedJob} onClose={() => setSelectedJob(null)} />
     </div>
   );
 };

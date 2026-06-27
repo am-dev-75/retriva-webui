@@ -15,16 +15,18 @@
  */
 
 import { CONFIG } from '../app/config';
-import { 
+import {
   Message,
   KnowledgeBase,
-  Document, 
+  Document,
   Artifact,
   MetadataSchemaResponse,
   MetadataValuesResponse,
   MetadataFilter,
   MetadataFilterMode,
   SystemStatusResponse,
+  SystemStatusDetailResponse,
+  JobSummary,
   ConnectedSource,
   CreateSourceRequest,
   SourceRun
@@ -152,12 +154,15 @@ class GatewayClient {
     });
   }
 
-  async uploadFileToBatch(batchId: string, file: File, sourcePath: string, metadata?: Record<string, any>): Promise<any> {
+  async uploadFileToBatch(batchId: string, file: File, sourcePath: string, metadata?: Record<string, any>, force?: boolean): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('source_path', sourcePath);
     if (metadata) {
       formData.append('user_metadata', JSON.stringify(metadata));
+    }
+    if (force) {
+      formData.append('force', 'true');
     }
 
     const response = await fetch(`${this.baseUrl}/gateway/ingestion/batches/${batchId}/files`, {
@@ -238,6 +243,18 @@ class GatewayClient {
   // System Status
   async getSystemStatus(): Promise<SystemStatusResponse> {
     return this.request<SystemStatusResponse>('/gateway/system/status');
+  }
+
+  async getSystemStatusDetail(): Promise<SystemStatusDetailResponse> {
+    return this.request<SystemStatusDetailResponse>('/gateway/system/status/detail');
+  }
+
+  async listJobs(): Promise<JobSummary[]> {
+    return this.request<JobSummary[]>('/gateway/system/jobs');
+  }
+
+  async getJob(jobId: string): Promise<JobSummary> {
+    return this.request<JobSummary>(`/gateway/system/jobs/${jobId}`);
   }
   // Connected Sources
   async getSources(): Promise<ConnectedSource[]> {

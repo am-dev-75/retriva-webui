@@ -39,6 +39,7 @@ export const UploadPanel: React.FC = () => {
   const [globalMetadata, setGlobalMetadata] = useState<MetadataField[]>([]);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [sourceType, setSourceType] = useState<'auto' | 'mediawiki_export'>('auto');
+  const [forceReingest, setForceReingest] = useState(false);
 
   const addFiles = (files: FileList | null) => {
     if (!files) return;
@@ -112,7 +113,9 @@ export const UploadPanel: React.FC = () => {
             await gatewayClient.uploadFileToBatch(
               batch_id, 
               fileItem.file, 
-              fileItem.path
+              fileItem.path,
+              undefined,
+              forceReingest,
             );
             fileItem.status = 'completed';
             fileItem.progress = 100;
@@ -230,6 +233,20 @@ export const UploadPanel: React.FC = () => {
                 {t('ingestion.mediawiki_hint')}
               </p>
             )}
+          </div>
+
+          <div className="metadata-section" style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--color-border)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={forceReingest}
+                onChange={(e) => setForceReingest(e.target.checked)}
+              />
+              <strong>Force re-ingest</strong>
+            </label>
+            <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+              Re-process files even if they were previously uploaded (ignores deduplication). Use this to recover from interrupted ingestions.
+            </p>
           </div>
 
           <div className="file-list">
