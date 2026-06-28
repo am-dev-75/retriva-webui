@@ -508,6 +508,93 @@
   color: var(--color-text-muted);
 }
 
+/* ── Inline Expansion (Documents-style) ────────────────────────── */
+
+.expand-cell {
+  padding-right: 0 !important;
+  width: 40px;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.expand-btn:hover {
+  background-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.expand-btn.active {
+  transform: rotate(180deg);
+  color: var(--color-primary);
+}
+
+.jobs-table tr.row-expanded td {
+  background-color: var(--color-surface-muted);
+}
+
+.jobs-table tr.expansion-row td {
+  padding: 0 !important;
+  background-color: var(--color-bg) !important;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.expansion-content {
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-left: 3px solid var(--color-primary);
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.05), transparent);
+}
+
+.expansion-content .detail-section {
+  margin-bottom: var(--spacing-md);
+}
+
+.expansion-content .detail-section h3 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}
+
+.expansion-content .detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.expansion-content .detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.expansion-content .detail-item .label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.expansion-content .detail-item .value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.expansion-content .detail-item .value.mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.8125rem;
+}
+
 /* ── Responsive ────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {

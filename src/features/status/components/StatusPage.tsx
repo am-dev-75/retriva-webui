@@ -18,11 +18,10 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   RefreshCw, Layers, Clock, CheckCircle, AlertCircle, Loader,
-  FileText, ChevronRight,
+  FileText, ChevronDown, Circle,
 } from 'lucide-react';
 import { gatewayClient } from '../../../api/gateway-client';
 import { SystemStatusDetailResponse, JobSummary } from '../../../api/types';
-import { JobDetailDrawer } from './JobDetailDrawer';
 import './StatusDashboard.css';
 
 type FilterCategory = 'all' | 'enqueued' | 'processing' | 'completed' | 'failed';
@@ -36,6 +35,31 @@ const STATUS_TO_CATEGORY: Record<string, FilterCategory> = {
   cancelled: 'failed',
 };
 
+const PIPELINE_STAGES = ['DETECTING', 'PREPROCESSING', 'PARSING', 'NORMALIZATION', 'CHUNKING', 'INDEXING'];
+
+const formatDuration = (created: string, updated: string) => {
+  try {
+    const ms = new Date(updated).getTime() - new Date(created).getTime();
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    if (ms < 3600000) return `${(ms / 60000).toFixed(1)}m`;
+    return `${(ms / 3600000).toFixed(1)}h`;
+  } catch {
+    return '—';
+  }
+};
+
+const formatTime = (iso: string) => {
+  try { return new Date(iso).toLocaleString(); } catch { return iso; }
+};
+
+const getProgressPct = (job: JobSummary): number | null => {
+  if (job.progress !== null && job.progress !== undefined) return job.progress;
+  if (job.status === 'completed') return 100;
+  if (job.status === 'failed' || job.status === 'cancelled') return 0;
+  return null;
+};
+
 export const StatusPage: React.FC = () => {
   const { t } = useTranslation();
   const [detail, setDetail] = useState<SystemStatusDetailResponse | null>(null);
@@ -44,7 +68,7 @@ export const StatusPage: React.FC = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
-  const [selectedJob, setSelectedJob] = useState<JobSummary | null>(null);
+  const [expandedJobIds, setExpandedJobIds] = useState<Set<string>>(new Set());
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -72,16 +96,6 @@ export const StatusPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [autoRefresh, fetchStatus]);
 
-  // Keep selected job updated with latest data
-  useEffect(() => {
-    if (selectedJob && detail) {
-      const updated = detail.job_list.find((j) => j.job_id === selectedJob.job_id);
-      if (updated && JSON.stringify(updated) !== JSON.stringify(selectedJob)) {
-        setSelectedJob(updated);
-      }
-    }
-  }, [detail, selectedJob]);
-
   const filteredJobs = useMemo(() => {
     if (!detail) return [];
     const sorted = [...detail.job_list].sort((a, b) =>
@@ -97,15 +111,26 @@ export const StatusPage: React.FC = () => {
     setActiveFilter((prev) => (prev === cat ? 'all' : cat));
   };
 
-  const formatTime = (iso: string) => {
-    try { return new Date(iso).toLocaleTimeString(); } catch { return iso; }
+  const toggleJobExpanded = (jobId: string) => {
+    setExpandedJobIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else {
+        next.add(jobId);
+      }
+      return next;
+    });
   };
 
-  const getProgressPct = (job: JobSummary): number | null => {
-    if (job.progress !== null && job.progress !== undefined) return job.progress;
-    if (job.status === 'completed') return 100;
-    if (job.status === 'failed' || job.status === 'cancelled') return 0;
-    return null;
+  const allExpanded = filteredJobs.length > 0 && filteredJobs.every((j) => expandedJobIds.has(j.job_id));
+
+  const toggleExpandAll = () => {
+    if (allExpanded) {
+      setExpandedJobIds(new Set());
+    } else {
+      setExpandedJobIds(new Set(filteredJobs.map((j) => j.job_id)));
+    }
   };
 
   return (
@@ -216,15 +241,27 @@ export const StatusPage: React.FC = () => {
               : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Jobs`}
             <span className="panel-count">({filteredJobs.length})</span>
           </h2>
-          {activeFilter !== 'all' && (
-            <button
-              className="btn btn-ghost"
-              style={{ fontSize: '0.8125rem', padding: '4px 12px' }}
-              onClick={() => setActiveFilter('all')}
-            >
-              Clear filter
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center' }}>
+            {filteredJobs.length > 0 && (
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: '0.8125rem', padding: '4px 12px' }}
+                onClick={toggleExpandAll}
+              >
+                <ChevronDown size={14} style={{ transform: allExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                {allExpanded ? 'Collapse all' : 'Expand all'}
+              </button>
+            )}
+            {activeFilter !== 'all' && (
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: '0.8125rem', padding: '4px 12px' }}
+                onClick={() => setActiveFilter('all')}
+              >
+                Clear filter
+              </button>
+            )}
+          </div>
         </div>
         <div className="panel-body">
           {loading && !detail ? (
@@ -239,59 +276,174 @@ export const StatusPage: React.FC = () => {
             <table className="jobs-table">
               <thead>
                 <tr>
+                  <th style={{ width: '40px' }}></th>
                   <th>Source</th>
                   <th>Status</th>
                   <th>Stage</th>
                   <th>Progress</th>
                   <th>Updated</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {filteredJobs.map((job) => {
                   const pct = getProgressPct(job);
+                  const isExpanded = expandedJobIds.has(job.job_id);
                   return (
-                    <tr key={job.job_id} onClick={() => setSelectedJob(job)}>
-                      <td>
-                        <div className="job-source">{job.source.split('/').pop() || job.source}</div>
-                        <div className="job-id">{job.job_id.substring(0, 12)}…</div>
-                      </td>
-                      <td>
-                        <span className={`job-status-badge ${job.status}`}>
-                          {job.status === 'running' && <Loader size={11} className="spinning" />}
-                          {job.status === 'completed' && <CheckCircle size={11} />}
-                          {job.status === 'failed' && <AlertCircle size={11} />}
-                          {job.status}
-                        </span>
-                      </td>
-                      <td>
-                        {job.current_stage || '—'}
-                        {job.stage_detail && (
-                          <div className="stage-detail">{job.stage_detail}</div>
-                        )}
-                      </td>
-                      <td style={{ minWidth: '120px' }}>
-                        {pct !== null ? (
-                          <div className="stage-progress">
-                            <div className="stage-progress-bar">
-                              <div
-                                className={`stage-progress-fill ${job.status === 'completed' ? 'completed' : job.status === 'failed' ? 'failed' : ''}`}
-                                style={{ width: `${pct}%` }}
-                              />
+                    <React.Fragment key={job.job_id}>
+                      <tr
+                        className={isExpanded ? 'row-expanded' : ''}
+                        onClick={() => toggleJobExpanded(job.job_id)}
+                      >
+                        <td className="expand-cell">
+                          <button
+                            className={`expand-btn ${isExpanded ? 'active' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); toggleJobExpanded(job.job_id); }}
+                            title={isExpanded ? 'Hide details' : 'Show details'}
+                          >
+                            <ChevronDown size={18} />
+                          </button>
+                        </td>
+                        <td>
+                          <div className="job-source">{job.source.split('/').pop() || job.source}</div>
+                          <div className="job-id">{job.job_id.substring(0, 12)}…</div>
+                        </td>
+                        <td>
+                          <span className={`job-status-badge ${job.status}`}>
+                            {job.status === 'running' && <Loader size={11} className="spinning" />}
+                            {job.status === 'completed' && <CheckCircle size={11} />}
+                            {job.status === 'failed' && <AlertCircle size={11} />}
+                            {job.status}
+                          </span>
+                        </td>
+                        <td>
+                          {job.current_stage || '—'}
+                          {job.stage_detail && (
+                            <div className="stage-detail">{job.stage_detail}</div>
+                          )}
+                        </td>
+                        <td style={{ minWidth: '120px' }}>
+                          {pct !== null ? (
+                            <div className="stage-progress">
+                              <div className="stage-progress-bar">
+                                <div
+                                  className={`stage-progress-fill ${job.status === 'completed' ? 'completed' : job.status === 'failed' ? 'failed' : ''}`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="stage-progress-label">{pct}%</span>
                             </div>
-                            <span className="stage-progress-label">{pct}%</span>
-                          </div>
-                        ) : (
-                          <span className="stage-detail">—</span>
-                        )}
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap', color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
-                        {formatTime(job.updated_at)}
-                      </td>
-                      <td>
-                        <ChevronRight size={16} color="var(--color-text-muted)" />
-                      </td>
-                    </tr>
+                          ) : (
+                            <span className="stage-detail">—</span>
+                          )}
+                        </td>
+                        <td style={{ whiteSpace: 'nowrap', color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
+                          {formatTime(job.updated_at)}
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="expansion-row">
+                          <td colSpan={6}>
+                            <div className="expansion-content">
+                              {/* Pipeline Stage Tracker */}
+                              <div className="detail-section">
+                                <h3>Pipeline Progress</h3>
+                                <div className="pipeline-tracker">
+                                  {PIPELINE_STAGES.map((stage, idx) => {
+                                    const isDone = job.stages_completed.includes(stage);
+                                    const isCurrent = job.current_stage === stage;
+                                    return (
+                                      <React.Fragment key={stage}>
+                                        {idx > 0 && (
+                                          <div className={`pipeline-connector ${isDone ? 'done' : ''}`} />
+                                        )}
+                                        <div className={`pipeline-step ${isDone ? 'done' : isCurrent ? 'current' : 'pending'}`}>
+                                          <span className="step-icon">
+                                            {isDone ? <CheckCircle size={14} /> : isCurrent ? <Loader size={14} className="spinning" /> : <Circle size={14} />}
+                                          </span>
+                                          {stage}
+                                        </div>
+                                      </React.Fragment>
+                                    );
+                                  })}
+                                </div>
+                                {job.stage_detail && (
+                                  <div className="stage-detail" style={{ marginTop: 'var(--spacing-sm)' }}>
+                                    {job.stage_detail}
+                                  </div>
+                                )}
+                                {job.progress !== null && job.progress !== undefined && (
+                                  <div style={{ marginTop: 'var(--spacing-sm)' }}>
+                                    <div className="stage-progress">
+                                      <div className="stage-progress-bar">
+                                        <div
+                                          className={`stage-progress-fill ${job.status === 'completed' ? 'completed' : job.status === 'failed' ? 'failed' : ''}`}
+                                          style={{ width: `${job.progress}%` }}
+                                        />
+                                      </div>
+                                      <span className="stage-progress-label">{job.progress}%</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Details Grid */}
+                              <div className="detail-grid" style={{ marginTop: 'var(--spacing-lg)' }}>
+                                <div className="detail-item">
+                                  <span className="label">Job ID</span>
+                                  <span className="value mono">{job.job_id}</span>
+                                </div>
+                                <div className="detail-item">
+                                  <span className="label">Job Type</span>
+                                  <span className="value mono">{job.job_type}</span>
+                                </div>
+                                <div className="detail-item">
+                                  <span className="label">Source URI</span>
+                                  <span className="value mono">{job.source}</span>
+                                </div>
+                                <div className="detail-item">
+                                  <span className="label">Stages Done</span>
+                                  <span className="value">{job.stages_completed.length} / {PIPELINE_STAGES.length}</span>
+                                </div>
+                                <div className="detail-item">
+                                  <span className="label">Created</span>
+                                  <span className="value">{formatTime(job.created_at)}</span>
+                                </div>
+                                <div className="detail-item">
+                                  <span className="label">Updated</span>
+                                  <span className="value">{formatTime(job.updated_at)}</span>
+                                </div>
+                                <div className="detail-item">
+                                  <span className="label">Duration</span>
+                                  <span className="value">{formatDuration(job.created_at, job.updated_at)}</span>
+                                </div>
+                              </div>
+
+                              {/* Error */}
+                              {job.error && (
+                                <div className="detail-section" style={{ marginTop: 'var(--spacing-lg)' }}>
+                                  <h3>Error</h3>
+                                  <div className="error-box">{job.error}</div>
+                                </div>
+                              )}
+
+                              {/* Completed Stages */}
+                              {job.stages_completed.length > 0 && (
+                                <div className="detail-section" style={{ marginTop: 'var(--spacing-lg)' }}>
+                                  <h3>Completed Stages</h3>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-xs)' }}>
+                                    {job.stages_completed.map((s) => (
+                                      <span key={s} className="job-status-badge completed">
+                                        <CheckCircle size={12} /> {s}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -299,9 +451,6 @@ export const StatusPage: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* Job Detail Drawer */}
-      <JobDetailDrawer job={selectedJob} onClose={() => setSelectedJob(null)} />
     </div>
   );
 };
