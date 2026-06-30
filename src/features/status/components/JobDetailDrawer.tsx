@@ -40,10 +40,11 @@ export const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({ job, onClose }
   const formatDuration = (created: string, updated: string) => {
     try {
       const ms = new Date(updated).getTime() - new Date(created).getTime();
-      if (ms < 1000) return `${ms}ms`;
-      if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-      if (ms < 3600000) return `${(ms / 60000).toFixed(1)}m`;
-      return `${(ms / 3600000).toFixed(1)}h`;
+      const totalSec = Math.floor(ms / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     } catch {
       return '—';
     }
