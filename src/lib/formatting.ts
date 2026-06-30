@@ -69,3 +69,17 @@ export const formatFileSize = (bytes: number) => {
   
   return `${formatNumber(value)} ${sizes[i]}`;
 };
+
+/**
+ * Format a date as YYYYMMDD HH:MM:SS (matching Retriva log format).
+ */
+export const formatDateTime = (date: string | number | Date) => {
+  const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${yyyy}${mm}${dd} ${hh}:${mi}:${ss}`;
+};
