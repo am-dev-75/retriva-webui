@@ -225,9 +225,11 @@ export const ChatContainer: React.FC = () => {
   body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1.5rem; line-height: 1.7; color: #e2e8f0; background: #0f172a; }
   h1 { font-size: 1.25rem; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 0.75rem; }
   pre { white-space: pre-wrap; word-wrap: break-word; background: #1e293b; padding: 1.5rem; border-radius: 8px; border: 1px solid #334155; font-size: 0.9rem; }
+  a { color: #60a5fa; }
 </style>
 </head><body>
 <h1>[${cite.id}] ${cite.filename}${cite.page ? ` — Page ${cite.page}` : ''}</h1>
+${cite.source_url ? `<p><a href="${cite.source_url}" target="_blank" rel="noopener noreferrer">View original source page</a></p>` : ''}
 <pre>${cite.text?.replace(/</g, '&lt;').replace(/>/g, '&gt;') || 'No text available.'}</pre>
 </body></html>`);
                             win.document.close();

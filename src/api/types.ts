@@ -29,6 +29,7 @@ export interface Citation {
   filename: string;
   text: string;
   page?: number;
+  source_url?: string;
 }
 
 export interface KnowledgeBase {
