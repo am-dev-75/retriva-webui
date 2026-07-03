@@ -31,6 +31,8 @@ interface PendingFile {
   progress: number;
 }
 
+type FileWithRelativePath = File & { webkitRelativePath: string };
+
 export const UploadPanel: React.FC = () => {
   const { t } = useTranslation();
   const { selectedKbIds } = useKnowledgeBase();
@@ -46,7 +48,7 @@ export const UploadPanel: React.FC = () => {
 
     const newFiles: PendingFile[] = Array.from(files).map((file) => ({
       file,
-      path: (file as any).webkitRelativePath || file.name,
+      path: (file as FileWithRelativePath).webkitRelativePath || file.name,
       id: Math.random().toString(36).substring(7),
       status: 'pending',
       progress: 0,

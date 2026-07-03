@@ -17,6 +17,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { 
   MessageSquare, 
   Database, 
@@ -35,7 +36,7 @@ import { useKnowledgeBase } from '../providers/KnowledgeBaseProvider';
 import { CONFIG } from '../config';
 import './AppShell.css';
 
-const getNavItems = (t: any) => [
+const getNavItems = (t: TFunction) => [
   { path: '/', icon: MessageSquare, label: t('nav.chat') },
   { path: '/kb', icon: Database, label: t('nav.kb') },
   { path: '/documents', icon: Files, label: t('nav.documents') },

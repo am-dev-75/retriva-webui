@@ -87,8 +87,8 @@ export const StatusPage: React.FC = () => {
       setDetail(data);
       setLastUpdated(new Date());
       setError(null);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch status');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch status');
     } finally {
       setLoading(false);
     }
@@ -99,11 +99,13 @@ export const StatusPage: React.FC = () => {
   }, [fetchStatus]);
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (autoRefresh) {
       interval = setInterval(() => { fetchStatus(); }, 3000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [autoRefresh, fetchStatus]);
 
   const filteredJobs = useMemo(() => {

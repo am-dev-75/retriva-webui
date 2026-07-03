@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@azure/msal-browser": "^5.16.0",
     "clsx": "^2.1.1",
     "i18next": "^26.0.10",
     "i18next-browser-languagedetector": "^8.2.1",

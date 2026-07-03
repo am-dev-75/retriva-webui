@@ -45,7 +45,7 @@ describe('IngestionLanding', () => {
     expect(connectedTab).toBeInTheDocument();
     
     // UploadPanel should be present
-    expect(screen.getByText(/ingestion\.pending_uploads/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pending Uploads/i)).toBeInTheDocument();
   });
 
   it('switches to Dynamic Ingestion tab', async () => {
@@ -57,6 +57,6 @@ describe('IngestionLanding', () => {
     // Check if ConnectedSourcesList is rendered
     const headings = await screen.findAllByText('Dynamic Ingestion');
     expect(headings.length).toBeGreaterThanOrEqual(1);
-    expect(await screen.findByText(/No connected sources configured yet/i)).toBeInTheDocument();
+    expect(await screen.findByText(/No connected sources configured\./i)).toBeInTheDocument();
   });
 });

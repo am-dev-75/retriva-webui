@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthProvider';
+import { CONFIG } from '../config';
 
 export interface User {
   id: string;
@@ -31,19 +33,53 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Currently mocked since auth is disabled
-  const [user] = useState<User | null>({
-    id: 'local-user',
-    name: 'Retriva User',
-    email: 'user@retriva.local',
-    role: 'admin', // Defaulting to admin for local development
-  });
+/** Map an AuthUser (from the auth client) to the WebUI User model. */
+function mapAuthUser(authUser: {
+  id: string;
+  name: string;
+  email: string;
+  roles: string[];
+}): User {
+  const role: User['role'] = authUser.roles.includes('admin')
+    ? 'admin'
+    : authUser.roles.includes('manager')
+      ? 'manager'
+      : authUser.roles.includes('contributor')
+        ? 'contributor'
+        : 'viewer';
+  return {
+    id: authUser.id,
+    name: authUser.name,
+    email: authUser.email,
+    role,
+  };
+}
 
-  const [isLoading] = useState(false);
+export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(CONFIG.ENABLE_AUTH);
+
+  useEffect(() => {
+    if (CONFIG.ENABLE_AUTH) {
+      // When auth is enabled, derive the User from the authenticated account.
+      setUser(authUser ? mapAuthUser(authUser) : null);
+      setIsLoading(authLoading);
+    } else {
+      // When auth is disabled, fall back to the local mock user.
+      setUser({
+        id: 'local-user',
+        name: 'Retriva User',
+        email: 'user@retriva.local',
+        role: 'admin',
+      });
+      setIsLoading(false);
+    }
+  }, [authUser, authLoading]);
 
   return (
-    <UserContext.Provider value={{ user, isAuthenticated: !!user, isLoading }}>
+    <UserContext.Provider value={{ user, isAuthenticated, isLoading }}>
       {children}
     </UserContext.Provider>
   );

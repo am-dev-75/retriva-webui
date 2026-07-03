@@ -16,6 +16,7 @@
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './app/providers/ThemeProvider';
+import { AuthProvider } from './app/providers/AuthProvider';
 import { UserProvider } from './app/providers/UserProvider';
 import { KnowledgeBaseProvider } from './app/providers/KnowledgeBaseProvider';
 import { AppShell } from './app/layout/AppShell';
@@ -40,23 +41,25 @@ const StatusPageWrapper = () => <StatusPage />;
 function App() {
   return (
     <ThemeProvider>
-      <UserProvider>
-        <KnowledgeBaseProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<AppShell />}>
-                <Route index element={<ChatPage />} />
-                <Route path="kb" element={<KBPage />} />
-                <Route path="documents" element={<DocumentsPage />} />
-                <Route path="ingestion" element={<IngestionPage />} />
-                <Route path="artifacts" element={<ArtifactsPage />} />
-                <Route path="status" element={<StatusPageWrapper />} />
-                <Route path="settings" element={<SettingsPagePlaceholder />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </KnowledgeBaseProvider>
-      </UserProvider>
+      <AuthProvider>
+        <UserProvider>
+          <KnowledgeBaseProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<AppShell />}>
+                  <Route index element={<ChatPage />} />
+                  <Route path="kb" element={<KBPage />} />
+                  <Route path="documents" element={<DocumentsPage />} />
+                  <Route path="ingestion" element={<IngestionPage />} />
+                  <Route path="artifacts" element={<ArtifactsPage />} />
+                  <Route path="status" element={<StatusPageWrapper />} />
+                  <Route path="settings" element={<SettingsPagePlaceholder />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </KnowledgeBaseProvider>
+        </UserProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

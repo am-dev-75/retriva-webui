@@ -70,6 +70,8 @@ const toTagList = (value: unknown): string[] => {
 
 const getUserProvidedTags = (doc: DocumentView): string[] => {
   const metadata = doc.metadata || {};
+  const userProvided = metadata.user_provided as { tags?: unknown } | undefined;
+  const userMetadata = metadata.user_metadata as { tags?: unknown } | undefined;
 
   // All fields in metadata except system-internal ones
   const systemKeys = ['kb_id', 'user_provided', 'user_provided_tags', 'user_metadata', 'ingestion_status', 'created_at', 'ingestion_timestamp'];
@@ -81,9 +83,9 @@ const getUserProvidedTags = (doc: DocumentView): string[] => {
   return [
     ...autoTags,
     ...toTagList(metadata.user_provided_tags),
-    ...toTagList(metadata.user_provided?.tags),
+    ...toTagList(userProvided?.tags),
     ...toTagList(metadata.user_provided),
-    ...toTagList(metadata.user_metadata?.tags),
+    ...toTagList(userMetadata?.tags),
   ];
 };
 
@@ -110,7 +112,7 @@ const getDocumentDisplayName = (doc: DocumentView): string => {
 
 const getRawIngestionTimestamp = (doc: DocumentView): string | number | undefined => {
   const metadata = doc.metadata || {};
-  return (
+  const candidate = (
     doc.ingestion_timestamp ||
     metadata.ingestion_timestamp ||
     doc.ingested_at ||
@@ -120,6 +122,9 @@ const getRawIngestionTimestamp = (doc: DocumentView): string | number | undefine
     doc.created_at ||
     metadata.created_at
   );
+  return typeof candidate === 'string' || typeof candidate === 'number'
+    ? candidate
+    : undefined;
 };
 
 const formatDateShort = (timestamp?: string | number): string => {

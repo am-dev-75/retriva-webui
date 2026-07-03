@@ -57,7 +57,7 @@ export interface Document {
   size: number;
   content_type: string;
 
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   ingestion_status: 'completed' | 'failed' | 'processing';
 
   created_at?: string | number;
@@ -88,13 +88,13 @@ export interface MetadataSchemaResponse {
 
 export interface MetadataValuesResponse {
   field: string;
-  values: any[];
+  values: unknown[];
 }
 
 export interface MetadataFilter {
   field: string;
   operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'exists';
-  value: any;
+  value: unknown;
 }
 
 export interface SystemStatusResponse {

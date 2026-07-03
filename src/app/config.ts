@@ -17,7 +17,20 @@
 export const CONFIG = {
   GATEWAY_BASE_URL: import.meta.env.VITE_RETRIVA_GATEWAY_BASE_URL || 'http://localhost:8002',
   APP_NAME: import.meta.env.VITE_APP_NAME || 'Retriva',
-  ENABLE_AUTH: import.meta.env.VITE_ENABLE_AUTH === 'true',
+  // --- Authentication ---
+  // "none" = no authentication (default). "entra" = Microsoft Entra ID.
+  AUTH_PROVIDER: (import.meta.env.VITE_RETRIVA_AUTH_PROVIDER || 'none') as 'none' | 'entra',
+  ENTRA_CLIENT_ID: import.meta.env.VITE_RETRIVA_ENTRA_CLIENT_ID || '',
+  ENTRA_TENANT_ID: import.meta.env.VITE_RETRIVA_ENTRA_TENANT_ID || '',
+  ENTRA_AUTHORITY: import.meta.env.VITE_RETRIVA_ENTRA_AUTHORITY || '',
+  ENTRA_SCOPES: (import.meta.env.VITE_RETRIVA_ENTRA_SCOPES || '')
+    .split(',')
+    .map((s: string) => s.trim())
+    .filter(Boolean),
+  // Derived: auth is enabled when a real provider is configured.
+  get ENABLE_AUTH() {
+    return this.AUTH_PROVIDER !== 'none';
+  },
   ENABLE_ARTIFACTS: import.meta.env.VITE_ENABLE_ARTIFACTS !== 'false',
   ENABLE_FOLDER_UPLOAD: import.meta.env.VITE_ENABLE_FOLDER_UPLOAD !== 'false',
   ENABLE_SPEECH_INPUT: import.meta.env.VITE_RETRIVA_ENABLE_VOICE_INPUT !== undefined 
