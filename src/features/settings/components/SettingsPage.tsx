@@ -22,7 +22,7 @@ import { CONFIG } from '../../../app/config';
 import './Settings.css';
 
 export const SettingsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
 
   return (
@@ -72,10 +72,15 @@ export const SettingsPage: React.FC = () => {
           <Globe size={20} />
           <h3>{t('settings.language.title')}</h3>
         </div>
-        <div className="settings-card disabled">
+        <div className="settings-card">
           <p className="setting-description">{t('settings.language.subtitle')}</p>
           <div className="setting-item">
-            <select className="input-field" disabled value="en">
+            <select
+              className="input-field"
+              value={i18n.language}
+              onChange={(e) => i18n.changeLanguage(e.target.value)}
+            >
+              <option value="it">Italiano</option>
               <option value="en">English</option>
             </select>
           </div>

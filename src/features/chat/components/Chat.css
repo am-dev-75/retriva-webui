@@ -381,8 +381,8 @@
   resize: none;
   padding: var(--spacing-sm);
   color: var(--color-text);
-  max-height: 200px;
-  min-height: 24px;
+  max-height: 400px;
+  min-height: 100px;
 }
 
 .composer-textarea:focus {

@@ -347,7 +347,7 @@ ${cite.source_url ? `<p><a href="${cite.source_url}" target="_blank" rel="noopen
                 }
               }
             }}
-            rows={1}
+            rows={4}
           />
 
           <VoiceInputButton 

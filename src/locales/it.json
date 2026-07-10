@@ -1,0 +1,150 @@
+{
+  "common": {
+    "cancel": "Annulla",
+    "create": "Crea",
+    "delete": "Elimina",
+    "save": "Salva",
+    "loading": "Caricamento...",
+    "search": "Cerca...",
+    "filter": "Filtra",
+    "download": "Scarica",
+    "status": "Stato",
+    "actions": "Azioni",
+    "active": "Attivo",
+    "processing": "In elaborazione",
+    "error": "Errore",
+    "completed": "Completato"
+  },
+  "nav": {
+    "chat": "Chat",
+    "kb": "Knowledge Base",
+    "documents": "Documenti",
+    "ingestion": "Ingestione",
+    "artifacts": "Artefatti",
+    "settings": "Impostazioni"
+  },
+  "chat": {
+    "welcome": "Benvenuto in Retriva",
+    "empty_state": "Inizia una conversazione con le Knowledge Base selezionate.",
+    "placeholder": "Fai una domanda... / Ask a question...",
+    "input_hint": "Premi Invio per inviare, Shift+Invio per andare a capo.",
+    "attachment": "Allega file",
+    "voice_input": "Input vocale (Disabilitato)",
+    "stop": "Interrompi generazione",
+    "repeat": "Ripeti ultimo messaggio",
+    "copy_query": "Copia domanda",
+    "copy_response": "Copia risposta",
+    "copy_qa": "Copia domanda e risposta",
+    "feedback_positive": "Buona risposta",
+    "feedback_negative": "Risposta scadente",
+    "interrupted": "La generazione della risposta è stata interrotta.",
+    "filters": "Filtri metadati",
+    "title": "Chat",
+    "subtitle": "Interagisci con le tue knowledge base usando il linguaggio naturale.",
+    "disclaimer": "I contenuti generati dall'IA potrebbero non essere corretti."
+  },
+  "kb": {
+    "title": "Knowledge Base",
+    "subtitle": "Gestisci le raccolte di documenti per il recupero.",
+    "create_btn": "Crea KB",
+    "create_title": "Crea nuova Knowledge Base",
+    "name_placeholder": "Nome KB",
+    "doc_count": "Documenti",
+    "view_docs": "Visualizza documenti",
+    "delete_title": "Elimina KB",
+    "confirm_delete": "Sei sicuro di voler eliminare questa knowledge base?",
+    "empty_state": "Nessuna Knowledge Base trovata. Creane una per iniziare."
+  },
+  "ingestion": {
+    "title": "Ingestione",
+    "subtitle": "Carica documenti e cartelle nella tua knowledge base.",
+    "drop_title": "Clicca o trascina i file qui",
+    "drop_subtitle": "Supporto per file singoli, multipli o intere cartelle.",
+    "select_files": "Seleziona file",
+    "select_folder": "Seleziona cartella",
+    "pending_uploads": "Upload in attesa ({{count}})",
+    "upload_all": "Carica tutti",
+    "clear_list": "Svuota lista",
+    "confirm_clear": "Sei sicuro di voler svuotare la lista dei documenti da caricare?",
+    "no_files": "Nessun file selezionato",
+    "source_type": "Tipo sorgente",
+    "source_type_auto": "Rilevamento automatico",
+    "source_type_mediawiki": "Snapshot esportazione MediaWiki",
+    "mediawiki_hint": "I file verranno gestiti ed elaborati come una directory di esportazione XML MediaWiki.",
+    "finalize": "Elabora batch",
+    "finalizing": "Elaborazione..."
+  },
+  "documents": {
+    "title": "Documenti",
+    "subtitle": "Sfoglia e gestisci i tuoi documenti indicizzati.",
+    "search_placeholder": "Cerca documenti...",
+    "case_sensitive": "Maiuscole/minuscole",
+    "initial_prompt": "Cerca documenti per nome o usa i filtri per esplorare la tua knowledge base.",
+    "table": {
+      "filename": "Nome file",
+      "kb": "KB",
+      "size": "Dimensione",
+      "tags": "Tag",
+      "user_provided_tags": "Tag utente",
+      "created": "Creato"
+    }
+  },
+  "artifacts": {
+    "title": "Artefatti",
+    "subtitle": "Visualizza e scarica i tuoi report e le tue estrazioni.",
+    "empty_state": "Nessun artefatto trovato"
+  },
+  "metadata": {
+    "title": "Metadati",
+    "mode_soft": "Usa come suggerimenti di ranking",
+    "mode_hard": "Richiedi metadati corrispondenti",
+    "presets": "Preset",
+    "add_field": "Aggiungi campo",
+    "empty_state": "Nessun campo metadati aggiunto.",
+    "key_placeholder": "Chiave",
+    "value_placeholder": "Valore",
+    "presets_list": {
+      "project": "Info progetto",
+      "confidentiality": "Riservatezza"
+    }
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "subtitle": "Gestisci le preferenze e la configurazione dell'applicazione.",
+    "appearance": {
+      "title": "Aspetto",
+      "subtitle": "Seleziona come Retriva deve apparire sul tuo dispositivo.",
+      "light": "Chiaro",
+      "dark": "Scuro",
+      "system": "Sistema"
+    },
+    "language": {
+      "title": "Lingua",
+      "subtitle": "Seleziona la tua lingua preferita."
+    },
+    "gateway": {
+      "title": "Configurazione Gateway",
+      "label": "URL Gateway",
+      "hint": "L'endpoint per l'API del Gateway Retriva."
+    },
+    "speech": {
+      "title": "Input vocale (Futuro)",
+      "subtitle": "Le funzionalità di dettatura vocale sono attualmente disabilitate in questa versione.",
+      "enable": "Abilita input vocale"
+    }
+  },
+  "status_page": {
+    "title": "Stato del sistema",
+    "subtitle": "Monitora lo stato di salute del Gateway e del Core di Retriva.",
+    "jobs_summary": "Riepilogo lavori",
+    "staged_files": "File in attesa",
+    "staged_files_desc": "File in attesa di essere ingeriti nel Gateway",
+    "enqueued": "In coda",
+    "processing": "In elaborazione",
+    "completed": "Completato",
+    "failed": "Fallito",
+    "refresh": "Aggiorna",
+    "auto_refresh": "Aggiornamento automatico (5s)",
+    "last_updated": "Ultimo aggiornamento"
+  }
+}

@@ -26,7 +26,7 @@
   "chat": {
     "welcome": "Welcome to Retriva",
     "empty_state": "Start a conversation with selected Knowledge Base(s).",
-    "placeholder": "Ask a question...",
+    "placeholder": "Fai una domanda... / Ask a question...",
     "input_hint": "Press Enter to send, Shift+Enter for new line.",
     "attachment": "Attach file",
     "voice_input": "Voice input (Disabled)",
@@ -120,7 +120,7 @@
     },
     "language": {
       "title": "Language",
-      "subtitle": "Select your preferred language. (Currently English only)"
+      "subtitle": "Select your preferred language."
     },
     "gateway": {
       "title": "Gateway Configuration",
