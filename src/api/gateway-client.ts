@@ -30,7 +30,8 @@ import {
   JobSummary,
   ConnectedSource,
   CreateSourceRequest,
-  SourceRun
+  SourceRun,
+  AuthInfo
 } from './types';
 
 interface DocumentListResponse {
@@ -176,6 +177,12 @@ class GatewayClient {
     return this.request<KnowledgeBase[]>('/gateway/kbs');
   }
 
+  async getKBsForCollection(collection: string): Promise<KnowledgeBase[]> {
+    return this.request<KnowledgeBase[]>('/gateway/kbs', {
+      headers: { 'X-Retriva-Requested-Collection': collection },
+    });
+  }
+
   async createKB(name: string, description?: string): Promise<KnowledgeBase> {
     return this.request<KnowledgeBase>('/gateway/kbs', {
       method: 'POST',
@@ -295,7 +302,11 @@ class GatewayClient {
   async getArtifacts(): Promise<Artifact[]> {
     return this.request<Artifact[]>('/gateway/artifacts');
   }
-  // System Status
+  // System
+  async getAuthInfo(): Promise<AuthInfo> {
+    return this.request<AuthInfo>('/gateway/system/auth');
+  }
+
   async getSystemStatus(): Promise<SystemStatusResponse> {
     return this.request<SystemStatusResponse>('/gateway/system/status');
   }

@@ -21,6 +21,145 @@
   margin: 0 auto;
 }
 
+/* ── Collections section ───────────────────────────────────────────── */
+
+.collections-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.collections-section .section-header h2 {
+  font-family: var(--font-family);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.collections-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.collection-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.collection-chip.default {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-muted);
+}
+
+.collection-chip .badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.skeleton-chip {
+  width: 150px;
+  height: 36px;
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-full);
+  animation: pulse 1.5s infinite;
+}
+
+.section-divider {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  margin: var(--spacing-xl) 0;
+}
+
+/* ── Knowledge Base section header ─────────────────────────────────── */
+
+.page-header h1 {
+  font-family: var(--font-family);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* ── Hierarchical collection → KB view ────────────────────────────── */
+
+.kb-hierarchy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.collection-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.collection-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.collection-group-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.collection-group-title {
+  font-family: var(--font-family);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.collection-group-count {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.collection-group-body {
+  padding-left: var(--spacing-lg);
+}
+
+.kb-hierarchy-loading,
+.kb-hierarchy-empty {
+  padding: var(--spacing-lg);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.kb-hierarchy-empty {
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
 .kb-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -61,7 +200,9 @@
 }
 
 .kb-info h3 {
+  font-family: var(--font-family);
   font-size: 1.125rem;
+  font-weight: 600;
   margin-bottom: 2px;
 }
 

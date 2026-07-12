@@ -34,10 +34,20 @@ export interface Citation {
 
 export interface KnowledgeBase {
   id: string;
+  collection: string;
   name: string;
   description?: string;
   document_count: number;
   status: 'active' | 'processing' | 'error';
+}
+
+export interface AuthInfo {
+  principal_id: string;
+  name: string;
+  allowed_collections: string[];
+  default_collection: string | null;
+  fallback_collection: string;
+  is_anonymous: boolean;
 }
 
 export interface IngestionBatch {

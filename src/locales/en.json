@@ -17,7 +17,7 @@
   },
   "nav": {
     "chat": "Chat",
-    "kb": "Knowledge Bases",
+    "kb": "Knowledge Base",
     "documents": "Documents",
     "ingestion": "Ingestion",
     "artifacts": "Artifacts",
@@ -44,8 +44,8 @@
     "disclaimer": "AI-generated content may be incorrect."
   },
   "kb": {
-    "title": "Knowledge Bases",
-    "subtitle": "Manage collections of documents for retrieval.",
+    "title": "Knowledge Base",
+    "subtitle": "Manage knowledge bases organized by collection.",
     "create_btn": "Create KB",
     "create_title": "Create New Knowledge Base",
     "name_placeholder": "KB Name",
@@ -54,6 +54,12 @@
     "delete_title": "Delete KB",
     "confirm_delete": "Are you sure you want to delete this knowledge base?",
     "empty_state": "No Knowledge Bases found. Create one to get started."
+  },
+  "collections": {
+    "title": "Defined Collections",
+    "subtitle": "Collections currently available to this session.",
+    "default_badge": "Default",
+    "anonymous_mode": "Anonymous Mode"
   },
   "ingestion": {
     "title": "Ingestion",

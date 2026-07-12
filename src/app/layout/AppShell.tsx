@@ -38,11 +38,11 @@ import './AppShell.css';
 
 const getNavItems = (t: TFunction) => [
   { path: '/', icon: MessageSquare, label: t('nav.chat') },
-  { path: '/kb', icon: Database, label: t('nav.kb') },
   { path: '/documents', icon: Files, label: t('nav.documents') },
   { path: '/ingestion', icon: Upload, label: t('nav.ingestion') },
   { path: '/artifacts', icon: FileText, label: t('nav.artifacts') },
   { path: '/status', icon: Activity, label: t('status_page.title') },
+  { path: '/kb', icon: Database, label: t('nav.kb') },
   { path: '/settings', icon: Settings, label: t('nav.settings') },
 ];
 

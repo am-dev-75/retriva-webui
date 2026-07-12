@@ -45,7 +45,7 @@
   },
   "kb": {
     "title": "Knowledge Base",
-    "subtitle": "Gestisci le raccolte di documenti per il recupero.",
+    "subtitle": "Gestisci le knowledge base organizzate per collection.",
     "create_btn": "Crea KB",
     "create_title": "Crea nuova Knowledge Base",
     "name_placeholder": "Nome KB",
@@ -54,6 +54,12 @@
     "delete_title": "Elimina KB",
     "confirm_delete": "Sei sicuro di voler eliminare questa knowledge base?",
     "empty_state": "Nessuna Knowledge Base trovata. Creane una per iniziare."
+  },
+  "collections": {
+    "title": "Collection Definite",
+    "subtitle": "Le collection attualmente disponibili per questa sessione.",
+    "default_badge": "Predefinita",
+    "anonymous_mode": "Modalità Anonima"
   },
   "ingestion": {
     "title": "Ingestione",
