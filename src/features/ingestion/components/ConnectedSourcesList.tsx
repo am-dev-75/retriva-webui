@@ -15,6 +15,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { gatewayClient } from '../../../api/gateway-client';
 import { ConnectedSource } from '../../../api/types';
 import { AddSourceWizard } from './AddSourceWizard';
@@ -24,6 +25,7 @@ import { formatDateTime } from '../../../lib/formatting';
 import './ConnectedSourcesList.css';
 
 export const ConnectedSourcesList: React.FC = () => {
+  const { t } = useTranslation();
   const [sources, setSources] = useState<ConnectedSource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,11 +72,11 @@ export const ConnectedSourcesList: React.FC = () => {
   return (
     <div className="sources-list-container">
       <div className="sources-list-header">
-        <h2>Dynamic Ingestion</h2>
+        <h2>{t('ingestion.sources.title')}</h2>
         <div className="sources-actions">
           <button className="btn-secondary" onClick={fetchSources} disabled={isLoading}>
             <RefreshCw size={16} className={isLoading ? 'spinning' : ''} />
-            Refresh
+            {t('ingestion.sources.refresh')}
           </button>
           {/* Add Source button — disabled for now; will be re-enabled when
               the source creation wizard supports the full connector lifecycle.
@@ -94,14 +96,12 @@ export const ConnectedSourcesList: React.FC = () => {
       )}
 
       {isLoading ? (
-        <div className="loading-state">Loading sources...</div>
+        <div className="loading-state">{t('ingestion.sources.loading')}</div>
       ) : sources.length === 0 ? (
         <div className="empty-state">
-          <p>No connected sources configured.</p>
+          <p>{t('ingestion.sources.empty')}</p>
           <p className="empty-state-hint">
-            Sources are created automatically when a MediaWiki connector
-            registers with the Gateway. Ensure the connector is running and
-            configured correctly.
+            {t('ingestion.sources.empty_hint')}
           </p>
         </div>
       ) : (
@@ -119,7 +119,7 @@ export const ConnectedSourcesList: React.FC = () => {
                   <button
                     className={`expand-btn ${isExpanded ? 'active' : ''}`}
                     onClick={(e) => { e.stopPropagation(); toggleSourceExpanded(source.id); }}
-                    title={isExpanded ? 'Hide details' : 'Show details'}
+                    title={isExpanded ? t('ingestion.sources.hide_details') : t('ingestion.sources.show_details')}
                   >
                     <ChevronDown size={18} />
                   </button>
@@ -136,23 +136,23 @@ export const ConnectedSourcesList: React.FC = () => {
                     </span>
                   </div>
                   <div className="source-card-stats">
-                    <span className="stat-item" title="Indexed items">
+                    <span className="stat-item" title={t('ingestion.sources.indexed_items')}>
                       <CheckCircle size={14} />
                       {source.indexed_item_count}
                     </span>
-                    <span className="stat-item" title="Failed items">
+                    <span className="stat-item" title={t('ingestion.sources.failed_items')}>
                       <AlertCircle size={14} />
                       {source.failed_item_count}
                     </span>
                   </div>
                   <div className="source-card-sync">
                     {source.last_sync_at ? (
-                      <span title="Last sync">
+                      <span title={t('ingestion.sources.last_sync')}>
                         <Clock size={14} />
                         {formatDateTime(source.last_sync_at)}
                       </span>
                     ) : (
-                      <span className="text-muted">Never synced</span>
+                      <span className="text-muted">{t('ingestion.sources.never_synced')}</span>
                     )}
                   </div>
                 </div>
@@ -162,70 +162,70 @@ export const ConnectedSourcesList: React.FC = () => {
                   <div className="source-card-details">
                     <div className="detail-grid">
                       <div className="detail-item">
-                        <span className="label">Source ID</span>
+                        <span className="label">{t('ingestion.sources.source_id')}</span>
                         <span className="value mono">{source.id}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Connector Type</span>
+                        <span className="label">{t('ingestion.sources.connector_type')}</span>
                         <span className="value mono">{source.connector_type}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Target KB</span>
+                        <span className="label">{t('ingestion.sources.target_kb')}</span>
                         <span className="value mono">{source.target_kb_id}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Status</span>
+                        <span className="label">{t('ingestion.sources.status')}</span>
                         <span className="value">{mapSourceStatus(source.status)}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">API URL</span>
+                        <span className="label">{t('ingestion.sources.api_url')}</span>
                         <span className="value mono">{source.api_url}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Auth Mode</span>
+                        <span className="label">{t('ingestion.sources.auth_mode')}</span>
                         <span className="value">{source.auth_mode}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Sync Interval</span>
+                        <span className="label">{t('ingestion.sources.sync_interval')}</span>
                         <span className="value">{source.sync_interval_minutes ? `${source.sync_interval_minutes} min` : '—'}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Delete Policy</span>
+                        <span className="label">{t('ingestion.sources.delete_policy')}</span>
                         <span className="value">{source.delete_policy || '—'}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Availability</span>
+                        <span className="label">{t('ingestion.sources.availability')}</span>
                         <span className="value">{source.availability_policy || '—'}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Allowed Namespaces</span>
+                        <span className="label">{t('ingestion.sources.allowed_namespaces')}</span>
                         <span className="value">{source.allowed_namespaces?.join(', ') || '—'}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Indexed Items</span>
+                        <span className="label">{t('ingestion.sources.indexed_items')}</span>
                         <span className="value">{source.indexed_item_count}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Failed Items</span>
+                        <span className="label">{t('ingestion.sources.failed_items')}</span>
                         <span className="value">{source.failed_item_count}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Created</span>
+                        <span className="label">{t('ingestion.sources.created')}</span>
                         <span className="value">{source.created_at ? formatDateTime(source.created_at) : '—'}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Updated</span>
+                        <span className="label">{t('ingestion.sources.updated')}</span>
                         <span className="value">{source.updated_at ? formatDateTime(source.updated_at) : '—'}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="label">Last Sync</span>
-                        <span className="value">{source.last_sync_at ? formatDateTime(source.last_sync_at) : 'Never'}</span>
+                        <span className="label">{t('ingestion.sources.last_sync')}</span>
+                        <span className="value">{source.last_sync_at ? formatDateTime(source.last_sync_at) : t('ingestion.source_detail.never')}</span>
                       </div>
                     </div>
 
                     {source.include_categories && source.include_categories.length > 0 && (
                       <div className="detail-section">
-                        <h4>Include Categories</h4>
+                        <h4>{t('ingestion.sources.include_categories')}</h4>
                         <div className="tag-list">
                           {source.include_categories.map(cat => (
                             <span key={cat} className="tag-badge">{cat}</span>
@@ -236,7 +236,7 @@ export const ConnectedSourcesList: React.FC = () => {
 
                     {source.exclude_categories && source.exclude_categories.length > 0 && (
                       <div className="detail-section">
-                        <h4>Exclude Categories</h4>
+                        <h4>{t('ingestion.sources.exclude_categories')}</h4>
                         <div className="tag-list">
                           {source.exclude_categories.map(cat => (
                             <span key={cat} className="tag-badge">{cat}</span>
@@ -247,7 +247,7 @@ export const ConnectedSourcesList: React.FC = () => {
 
                     {source.metadata && Object.keys(source.metadata).length > 0 && (
                       <div className="detail-section">
-                        <h4>Metadata</h4>
+                        <h4>{t('ingestion.sources.metadata')}</h4>
                         <div className="detail-grid">
                           {Object.entries(source.metadata).map(([k, v]) => (
                             <div key={k} className="detail-item">

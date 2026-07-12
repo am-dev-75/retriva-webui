@@ -14,22 +14,12 @@
  * limitations under the License.
  */
 
-export const mapSourceStatus = (status: string): string => {
-  const map: Record<string, string> = {
-    CREATED: 'Configured',
-    VALIDATING_CONNECTION: 'Validating connection',
-    BASELINE_PENDING: 'Waiting for initial indexing',
-    BASELINE_RUNNING: 'Initial indexing',
-    CATCHUP_RUNNING: 'Catching up',
-    ACTIVE: 'Active',
-    PAUSED: 'Paused',
-    DEGRADED: 'Degraded',
-    FAILED: 'Failed',
-    DELETING: 'Disconnecting',
-    DELETED: 'Deleted'
-  };
+import i18n from 'i18next';
 
-  return map[status] || status;
+export const mapSourceStatus = (status: string): string => {
+  const key = `ingestion.source_status.${status}`;
+  const translated = i18n.t(key);
+  return translated !== key ? translated : status;
 };
 
 export const getStatusBadgeClass = (status: string): string => {

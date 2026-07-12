@@ -15,6 +15,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { gatewayClient } from '../../../api/gateway-client';
 import { ConnectedSource, SourceRun } from '../../../api/types';
 import { ArrowLeft, RefreshCw, Pause, Play, Trash2, AlertCircle } from 'lucide-react';
@@ -27,6 +28,7 @@ interface SourceDetailProps {
 }
 
 export const SourceDetail: React.FC<SourceDetailProps> = ({ sourceId, onBack }) => {
+  const { t } = useTranslation();
   const [source, setSource] = useState<ConnectedSource | null>(null);
   const [runs, setRuns] = useState<SourceRun[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,7 +66,7 @@ export const SourceDetail: React.FC<SourceDetailProps> = ({ sourceId, onBack }) 
           await gatewayClient.resumeSource(sourceId);
           break;
         case 'delete':
-          if (confirm('Are you sure you want to delete this source? This action cannot be undone.')) {
+          if (confirm(t('ingestion.source_detail.confirm_delete'))) {
             await gatewayClient.deleteSource(sourceId);
             onBack();
             return;
@@ -84,32 +86,32 @@ export const SourceDetail: React.FC<SourceDetailProps> = ({ sourceId, onBack }) 
     }
   };
 
-  if (isLoading) return <div className="loading-state">Loading source details...</div>;
-  if (!source) return <div className="error-alert">Source not found.</div>;
+  if (isLoading) return <div className="loading-state">{t('ingestion.source_detail.loading')}</div>;
+  if (!source) return <div className="error-alert">{t('ingestion.source_detail.not_found')}</div>;
 
   return (
     <div className="source-detail-container">
       <div className="detail-header">
         <button className="btn-icon" onClick={onBack}>
           <ArrowLeft size={20} />
-          <span>Back</span>
+          <span>{t('ingestion.source_detail.back')}</span>
         </button>
         <div className="header-actions">
           <button className="btn-secondary" onClick={() => handleAction('sync')} disabled={getStatusBadgeClass(source.status) === 'syncing'}>
             <RefreshCw size={16} className={getStatusBadgeClass(source.status) === 'syncing' ? 'spinning' : ''} />
-            Sync Now
+            {t('ingestion.source_detail.sync_now')}
           </button>
           {source.status === 'PAUSED' ? (
             <button className="btn-secondary" onClick={() => handleAction('resume')}>
-              <Play size={16} /> Resume
+              <Play size={16} /> {t('ingestion.source_detail.resume')}
             </button>
           ) : (
             <button className="btn-secondary" onClick={() => handleAction('pause')} disabled={getStatusBadgeClass(source.status) === 'syncing'}>
-              <Pause size={16} /> Pause
+              <Pause size={16} /> {t('ingestion.source_detail.pause')}
             </button>
           )}
           <button className="btn-danger" onClick={() => handleAction('delete')}>
-            <Trash2 size={16} /> Delete
+            <Trash2 size={16} /> {t('ingestion.source_detail.delete')}
           </button>
         </div>
       </div>
@@ -123,78 +125,78 @@ export const SourceDetail: React.FC<SourceDetailProps> = ({ sourceId, onBack }) 
 
       <div className="detail-cards">
         <div className="detail-card">
-          <h3>Overview</h3>
+          <h3>{t('ingestion.source_detail.overview')}</h3>
           <div className="info-grid">
             <div className="info-item">
-              <span className="label">Name</span>
+              <span className="label">{t('ingestion.source_detail.name')}</span>
               <span className="value">{source.display_name}</span>
             </div>
             <div className="info-item">
-              <span className="label">Type</span>
+              <span className="label">{t('ingestion.source_detail.type')}</span>
               <span className="value capitalize">{source.connector_type}</span>
             </div>
             <div className="info-item">
-              <span className="label">API URL</span>
+              <span className="label">{t('ingestion.sources.api_url')}</span>
               <span className="value">{source.api_url}</span>
             </div>
             <div className="info-item">
-              <span className="label">Target KB</span>
+              <span className="label">{t('ingestion.sources.target_kb')}</span>
               <span className="value">{source.target_kb_id}</span>
             </div>
             <div className="info-item">
-              <span className="label">Auth Mode</span>
+              <span className="label">{t('ingestion.sources.auth_mode')}</span>
               <span className="value">{source.auth_mode}</span>
             </div>
             <div className="info-item">
-              <span className="label">Delete Policy</span>
+              <span className="label">{t('ingestion.sources.delete_policy')}</span>
               <span className="value">{source.delete_policy || 'N/A'}</span>
             </div>
             <div className="info-item">
-              <span className="label">Availability Policy</span>
+              <span className="label">{t('ingestion.sources.availability')}</span>
               <span className="value">{source.availability_policy || 'N/A'}</span>
             </div>
             <div className="info-item">
-              <span className="label">Categories</span>
+              <span className="label">{t('ingestion.source_detail.categories')}</span>
               <span className="value">
                 {source.include_categories?.length ? `Include: ${source.include_categories.join(', ')}` : ''} 
                 {source.exclude_categories?.length ? ` | Exclude: ${source.exclude_categories.join(', ')}` : ''}
-                {(!source.include_categories?.length && !source.exclude_categories?.length) ? 'None' : ''}
+                {(!source.include_categories?.length && !source.exclude_categories?.length) ? t('ingestion.source_detail.never') : ''}
               </span>
             </div>
             <div className="info-item">
-              <span className="label">Metadata</span>
-              <pre className="value config-pre">{source.metadata ? JSON.stringify(source.metadata, null, 2) : 'None'}</pre>
+              <span className="label">{t('ingestion.sources.metadata')}</span>
+              <pre className="value config-pre">{source.metadata ? JSON.stringify(source.metadata, null, 2) : t('ingestion.source_detail.never')}</pre>
             </div>
           </div>
         </div>
 
         <div className="detail-card">
-          <h3>Lifecycle Status</h3>
+          <h3>{t('ingestion.source_detail.lifecycle_status')}</h3>
           <div className="info-grid">
             <div className="info-item">
-              <span className="label">Status</span>
+              <span className="label">{t('ingestion.sources.status')}</span>
               <span className={`source-status-badge ${getStatusBadgeClass(source.status)}`}>{mapSourceStatus(source.status)}</span>
             </div>
             <div className="info-item">
-              <span className="label">Last Sync</span>
-              <span className="value">{source.last_sync_at ? new Date(source.last_sync_at).toLocaleString() : 'Never'}</span>
+              <span className="label">{t('ingestion.sources.last_sync')}</span>
+              <span className="value">{source.last_sync_at ? new Date(source.last_sync_at).toLocaleString() : t('ingestion.source_detail.never')}</span>
             </div>
             <div className="info-item">
-              <span className="label">Next Sync</span>
-              <span className="value">{source.next_sync_at ? new Date(source.next_sync_at).toLocaleString() : 'Not scheduled'}</span>
+              <span className="label">{t('ingestion.source_detail.next_sync')}</span>
+              <span className="value">{source.next_sync_at ? new Date(source.next_sync_at).toLocaleString() : t('ingestion.source_detail.not_scheduled')}</span>
             </div>
             <div className="info-item">
-              <span className="label">Sync Interval</span>
+              <span className="label">{t('ingestion.sources.sync_interval')}</span>
               <span className="value">
-                {source.sync_interval_minutes ? `Every ${source.sync_interval_minutes} minutes` : 'Manual'}
+                {source.sync_interval_minutes ? t('ingestion.source_detail.every_minutes', { count: source.sync_interval_minutes }) : t('ingestion.source_detail.manual')}
               </span>
             </div>
             <div className="info-item">
-              <span className="label">Indexed Items</span>
+              <span className="label">{t('ingestion.sources.indexed_items')}</span>
               <span className="value text-success">{source.indexed_item_count}</span>
             </div>
             <div className="info-item">
-              <span className="label">Failed Items</span>
+              <span className="label">{t('ingestion.sources.failed_items')}</span>
               <span className="value text-danger">{source.failed_item_count}</span>
             </div>
           </div>
@@ -202,20 +204,20 @@ export const SourceDetail: React.FC<SourceDetailProps> = ({ sourceId, onBack }) 
       </div>
 
       <div className="runs-section">
-        <h3>Run History</h3>
+        <h3>{t('ingestion.source_detail.run_history')}</h3>
         {runs.length === 0 ? (
-          <div className="empty-state">No runs recorded yet.</div>
+          <div className="empty-state">{t('ingestion.source_detail.no_runs')}</div>
         ) : (
           <div className="table-responsive">
             <table className="sources-table">
               <thead>
                 <tr>
-                  <th>Status</th>
-                  <th>Started At</th>
-                  <th>Completed At</th>
-                  <th>Processed</th>
-                  <th>Failed</th>
-                  <th>Error</th>
+                  <th>{t('ingestion.source_detail.col_status')}</th>
+                  <th>{t('ingestion.source_detail.col_started_at')}</th>
+                  <th>{t('ingestion.source_detail.col_completed_at')}</th>
+                  <th>{t('ingestion.source_detail.col_processed')}</th>
+                  <th>{t('ingestion.source_detail.col_failed')}</th>
+                  <th>{t('ingestion.source_detail.col_error')}</th>
                 </tr>
               </thead>
               <tbody>

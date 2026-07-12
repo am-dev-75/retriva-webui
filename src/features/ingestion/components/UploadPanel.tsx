@@ -16,7 +16,7 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, Folder, X, File, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
+import { Upload, Folder, X, File, CheckCircle, AlertCircle, Trash2, Link as LinkIcon } from 'lucide-react';
 import { MetadataEditor, MetadataField } from '../../metadata/components/MetadataEditor';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
@@ -42,6 +42,10 @@ export const UploadPanel: React.FC = () => {
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [sourceType, setSourceType] = useState<'auto' | 'mediawiki_export'>('auto');
   const [forceReingest, setForceReingest] = useState(false);
+  const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   const addFiles = (files: FileList | null) => {
     if (!files) return;
@@ -79,6 +83,52 @@ export const UploadPanel: React.FC = () => {
   const handleClear = () => {
     setPendingFiles([]);
     setIsClearModalOpen(false);
+  };
+
+  const handleFetchUrl = async () => {
+    if (!urlInput.trim()) return;
+    setIsFetchingUrl(true);
+    setUrlError(null);
+    try {
+      const result = await gatewayClient.fetchUrl(urlInput.trim());
+      let file: File;
+      if (result.is_binary) {
+        // Binary content (PDF, images, Office docs): decode base64 → Blob → File
+        const byteCharacters = atob(result.content);
+        const byteArrays: Uint8Array[] = [];
+        const sliceSize = 8192;
+        for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+          const slice = byteCharacters.slice(offset, offset + sliceSize);
+          const byteNumbers = new Array(slice.length);
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+          byteArrays.push(new Uint8Array(byteNumbers));
+        }
+        const blob = new Blob(byteArrays, { type: result.content_type });
+        file = new File([blob], result.filename, { type: result.content_type });
+      } else {
+        // Text content (HTML, plain text, XML, JSON): use string directly
+        const title = result.title || urlInput.trim();
+        const filename = title.replace(/[^a-zA-Z0-9_\- ]/g, '').trim().replace(/\s+/g, '_') || 'webpage';
+        file = new File([result.content], `${filename}.html`, { type: 'text/html' });
+      }
+      const newFile: PendingFile = {
+        file,
+        path: result.final_url || urlInput.trim(),
+        id: Math.random().toString(36).substring(7),
+        status: 'pending',
+        progress: 0,
+      };
+      setPendingFiles((prev) => [...prev, newFile]);
+      setUrlInput('');
+      setIsUrlModalOpen(false);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setUrlError(t('ingestion.url_fetch_error', { error: error.message }));
+    } finally {
+      setIsFetchingUrl(false);
+    }
   };
 
   const handleUpload = async () => {
@@ -188,6 +238,10 @@ export const UploadPanel: React.FC = () => {
                 hidden 
               />
             </label>
+            <button className="btn btn-ghost" onClick={() => { setUrlError(null); setIsUrlModalOpen(true); }}>
+              <LinkIcon size={18} />
+              {t('ingestion.select_url')}
+            </button>
           </div>
         </div>
 
@@ -244,10 +298,10 @@ export const UploadPanel: React.FC = () => {
                 checked={forceReingest}
                 onChange={(e) => setForceReingest(e.target.checked)}
               />
-              <strong>Force re-ingest</strong>
+              <strong>{t('ingestion.force_reingest')}</strong>
             </label>
             <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-              Re-process files even if they were previously uploaded (ignores deduplication). Use this to recover from interrupted ingestions.
+              {t('ingestion.force_reingest_desc')}
             </p>
           </div>
 
@@ -286,7 +340,7 @@ export const UploadPanel: React.FC = () => {
                 ))}
                 {pendingFiles.length > 100 && (
                   <div className="file-item summary" style={{ justifyContent: 'center', color: 'var(--color-text-muted)', padding: '1rem' }}>
-                    <span>...and {pendingFiles.length - 100} more files (showing first 100)</span>
+                    <span>{t('ingestion.more_files', { count: pendingFiles.length - 100 })}</span>
                   </div>
                 )}
               </>
@@ -302,6 +356,48 @@ export const UploadPanel: React.FC = () => {
         title={t('ingestion.clear_list')}
         message={t('ingestion.confirm_clear')}
       />
+
+      {isUrlModalOpen && (
+        <div className="modal-overlay" onClick={() => !isFetchingUrl && setIsUrlModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3>{t('ingestion.url_modal_title')}</h3>
+              <button className="btn-icon" onClick={() => !isFetchingUrl && setIsUrlModalOpen(false)} disabled={isFetchingUrl}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                {t('ingestion.url_modal_subtitle')}
+              </p>
+              <input
+                type="url"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                placeholder={t('ingestion.url_placeholder')}
+                disabled={isFetchingUrl}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !isFetchingUrl) handleFetchUrl(); }}
+                style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}
+                autoFocus
+              />
+              {urlError && (
+                <div className="error-alert" style={{ marginTop: '0.75rem' }}>
+                  <AlertCircle size={16} />
+                  <span>{urlError}</span>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+              <button className="btn btn-ghost" onClick={() => setIsUrlModalOpen(false)} disabled={isFetchingUrl}>
+                {t('common.cancel')}
+              </button>
+              <button className="btn btn-primary" onClick={handleFetchUrl} disabled={isFetchingUrl || !urlInput.trim()}>
+                {isFetchingUrl ? t('ingestion.url_fetching') : t('ingestion.url_add')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

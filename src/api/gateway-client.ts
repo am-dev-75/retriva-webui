@@ -240,6 +240,13 @@ class GatewayClient {
     return this.request<unknown>(`/gateway/ingestion/batches/${batchId}`);
   }
 
+  async fetchUrl(url: string): Promise<{ url: string; final_url: string; content: string; content_type: string; title: string; is_binary: boolean; filename: string }> {
+    return this.request<{ url: string; final_url: string; content: string; content_type: string; title: string; is_binary: boolean; filename: string }>('/gateway/ingestion/fetch-url', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    });
+  }
+
   // Documents
   async getDocuments(kbId?: string): Promise<Document[]> {
     const query = kbId ? `?kb_id=${kbId}` : '';

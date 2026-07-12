@@ -15,11 +15,13 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UploadPanel } from './UploadPanel';
 import { ConnectedSourcesList } from './ConnectedSourcesList';
 import './IngestionLanding.css';
 
 export const IngestionLanding: React.FC = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'static' | 'connected'>('static');
 
   return (
@@ -29,13 +31,13 @@ export const IngestionLanding: React.FC = () => {
           className={`tab-btn ${activeTab === 'static' ? 'active' : ''}`}
           onClick={() => setActiveTab('static')}
         >
-          Static Ingestion
+          {t('ingestion.tab_static')}
         </button>
         <button 
           className={`tab-btn ${activeTab === 'connected' ? 'active' : ''}`}
           onClick={() => setActiveTab('connected')}
         >
-          Dynamic Ingestion
+          {t('ingestion.tab_dynamic')}
         </button>
       </div>
       <div className="tab-content">

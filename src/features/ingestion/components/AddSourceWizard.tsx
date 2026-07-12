@@ -15,6 +15,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { gatewayClient } from '../../../api/gateway-client';
 import { KnowledgeBase, CreateSourceRequest } from '../../../api/types';
 import './AddSourceWizard.css';
@@ -25,6 +26,7 @@ interface WizardProps {
 }
 
 export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel }) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
       try {
         parsedMetadata = JSON.parse(formData.metadata_json);
       } catch {
-        throw new Error('Invalid JSON in Metadata field');
+        throw new Error(t('ingestion.wizard.invalid_json'));
       }
 
       const payload: CreateSourceRequest = {
@@ -105,9 +107,9 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
   return (
     <div className="wizard-container">
       <div className="wizard-header">
-        <h2>Add New Source</h2>
+        <h2>{t('ingestion.wizard.title')}</h2>
         <div className="wizard-steps">
-          Step {step} of 6
+          {t('ingestion.wizard.step_of', { step })}
         </div>
       </div>
 
@@ -116,18 +118,18 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
 
         {step === 1 && (
           <div className="wizard-step">
-            <h3>1. Source Type</h3>
+            <h3>{t('ingestion.wizard.step_source_type')}</h3>
             <div className="form-group">
-              <label>Display Name</label>
+              <label>{t('ingestion.wizard.display_name')}</label>
               <input 
                 type="text" 
                 value={formData.display_name}
                 onChange={e => setFormData({...formData, display_name: e.target.value})}
-                placeholder="e.g. R&D MediaWiki"
+                placeholder={t('ingestion.wizard.display_name_placeholder')}
               />
             </div>
             <div className="form-group">
-              <label>Connector Type</label>
+              <label>{t('ingestion.wizard.connector_type')}</label>
               <select 
                 value={formData.connector_type}
                 onChange={e => setFormData({...formData, connector_type: e.target.value})}
@@ -140,35 +142,35 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
 
         {step === 2 && (
           <div className="wizard-step">
-            <h3>2. Connection & Auth</h3>
+            <h3>{t('ingestion.wizard.step_connection')}</h3>
             <div className="form-group">
-              <label>API URL</label>
+              <label>{t('ingestion.wizard.api_url')}</label>
               <input 
                 type="url" 
                 value={formData.api_url}
                 onChange={e => setFormData({...formData, api_url: e.target.value})}
-                placeholder="https://mediawiki.company.local/api.php"
+                placeholder={t('ingestion.wizard.api_url_placeholder')}
               />
             </div>
             <div className="form-group">
-              <label>Auth Mode</label>
+              <label>{t('ingestion.wizard.auth_mode')}</label>
               <select 
                 value={formData.auth_mode}
                 onChange={e => setFormData({...formData, auth_mode: e.target.value})}
               >
-                <option value="none">None</option>
-                <option value="bot_password">Bot Password</option>
-                <option value="oauth">OAuth</option>
+                <option value="none">{t('ingestion.wizard.auth_none')}</option>
+                <option value="bot_password">{t('ingestion.wizard.auth_bot_password')}</option>
+                <option value="oauth">{t('ingestion.wizard.auth_oauth')}</option>
               </select>
             </div>
             {formData.auth_mode !== 'none' && (
               <div className="form-group">
-                <label>Credentials (Token/Password)</label>
+                <label>{t('ingestion.wizard.credentials')}</label>
                 <input 
                   type="password" 
                   value={formData.auth_credentials}
                   onChange={e => setFormData({...formData, auth_credentials: e.target.value})}
-                  placeholder="Enter secret"
+                  placeholder={t('ingestion.wizard.credentials_placeholder')}
                 />
               </div>
             )}
@@ -177,32 +179,32 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
 
         {step === 3 && (
           <div className="wizard-step">
-            <h3>3. Scope Filters</h3>
+            <h3>{t('ingestion.wizard.step_scope')}</h3>
             <div className="form-group">
-              <label>Include Categories (comma-separated)</label>
+              <label>{t('ingestion.wizard.include_categories')}</label>
               <input 
                 type="text" 
                 value={formData.include_categories}
                 onChange={e => setFormData({...formData, include_categories: e.target.value})}
-                placeholder="e.g. R&D, Procedures"
+                placeholder={t('ingestion.wizard.include_categories_placeholder')}
               />
             </div>
             <div className="form-group">
-              <label>Exclude Categories (comma-separated)</label>
+              <label>{t('ingestion.wizard.exclude_categories')}</label>
               <input 
                 type="text" 
                 value={formData.exclude_categories}
                 onChange={e => setFormData({...formData, exclude_categories: e.target.value})}
-                placeholder="e.g. Obsolete"
+                placeholder={t('ingestion.wizard.exclude_categories_placeholder')}
               />
             </div>
             <div className="form-group">
-              <label>Allowed Namespaces (comma-separated IDs)</label>
+              <label>{t('ingestion.wizard.allowed_namespaces')}</label>
               <input 
                 type="text" 
                 value={formData.allowed_namespaces}
                 onChange={e => setFormData({...formData, allowed_namespaces: e.target.value})}
-                placeholder="0, 100, 102"
+                placeholder={t('ingestion.wizard.allowed_namespaces_placeholder')}
               />
             </div>
           </div>
@@ -210,37 +212,37 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
 
         {step === 4 && (
           <div className="wizard-step">
-            <h3>4. Target KB & Policies</h3>
+            <h3>{t('ingestion.wizard.step_target')}</h3>
             <div className="form-group">
-              <label>Target Knowledge Base</label>
+              <label>{t('ingestion.wizard.target_kb')}</label>
               <select 
                 value={formData.target_kb_id}
                 onChange={e => setFormData({...formData, target_kb_id: e.target.value})}
               >
-                <option value="">-- Select a KB --</option>
+                <option value="">{t('ingestion.wizard.select_kb')}</option>
                 {kbs.map(kb => (
                   <option key={kb.id} value={kb.id}>{kb.name}</option>
                 ))}
               </select>
             </div>
             <div className="form-group">
-              <label>Delete Policy</label>
+              <label>{t('ingestion.wizard.delete_policy')}</label>
               <select 
                 value={formData.delete_policy}
                 onChange={e => setFormData({...formData, delete_policy: e.target.value})}
               >
-                <option value="soft_delete">Soft Delete</option>
-                <option value="hard_delete">Hard Delete</option>
+                <option value="soft_delete">{t('ingestion.wizard.soft_delete')}</option>
+                <option value="hard_delete">{t('ingestion.wizard.hard_delete')}</option>
               </select>
             </div>
             <div className="form-group">
-              <label>Availability Policy</label>
+              <label>{t('ingestion.wizard.availability_policy')}</label>
               <select 
                 value={formData.availability_policy}
                 onChange={e => setFormData({...formData, availability_policy: e.target.value})}
               >
-                <option value="hide_until_initial_sync_complete">Hide until initial sync completes</option>
-                <option value="immediate">Immediate</option>
+                <option value="hide_until_initial_sync_complete">{t('ingestion.wizard.hide_until_sync')}</option>
+                <option value="immediate">{t('ingestion.wizard.immediate')}</option>
               </select>
             </div>
           </div>
@@ -248,19 +250,19 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
 
         {step === 5 && (
           <div className="wizard-step">
-            <h3>5. Sync & Metadata</h3>
+            <h3>{t('ingestion.wizard.step_sync')}</h3>
             <div className="form-group">
-              <label>Sync Interval (minutes)</label>
+              <label>{t('ingestion.wizard.sync_interval')}</label>
               <input 
                 type="number" 
                 value={formData.sync_interval_minutes}
                 onChange={e => setFormData({...formData, sync_interval_minutes: e.target.value})}
-                placeholder="15"
+                placeholder={t('ingestion.wizard.sync_interval_placeholder')}
               />
-              <small>Leave blank for manual sync only.</small>
+              <small>{t('ingestion.wizard.sync_interval_hint')}</small>
             </div>
             <div className="form-group">
-              <label>Metadata (JSON)</label>
+              <label>{t('ingestion.wizard.metadata_json')}</label>
               <textarea 
                 rows={4}
                 value={formData.metadata_json}
@@ -273,16 +275,16 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
 
         {step === 6 && (
           <div className="wizard-step review-step">
-            <h3>6. Review</h3>
+            <h3>{t('ingestion.wizard.step_review')}</h3>
             <div className="review-section">
-              <p><strong>Name:</strong> {formData.display_name}</p>
-              <p><strong>API URL:</strong> {formData.api_url}</p>
-              <p><strong>Auth Mode:</strong> {formData.auth_mode}</p>
+              <p><strong>{t('ingestion.wizard.review_name')}:</strong> {formData.display_name}</p>
+              <p><strong>{t('ingestion.wizard.review_api_url')}:</strong> {formData.api_url}</p>
+              <p><strong>{t('ingestion.wizard.review_auth_mode')}:</strong> {formData.auth_mode}</p>
               {formData.auth_mode !== 'none' && (
-                <p><strong>Credentials:</strong> ******** (Redacted)</p>
+                <p><strong>{t('ingestion.wizard.review_credentials')}:</strong> {t('ingestion.wizard.review_credentials_redacted')}</p>
               )}
-              <p><strong>Target KB:</strong> {kbs.find(k => k.id === formData.target_kb_id)?.name || formData.target_kb_id}</p>
-              <p><strong>Sync Interval:</strong> {formData.sync_interval_minutes || 'Manual'}</p>
+              <p><strong>{t('ingestion.wizard.review_target_kb')}:</strong> {kbs.find(k => k.id === formData.target_kb_id)?.name || formData.target_kb_id}</p>
+              <p><strong>{t('ingestion.wizard.review_sync_interval')}:</strong> {formData.sync_interval_minutes || t('ingestion.wizard.review_manual')}</p>
             </div>
           </div>
         )}
@@ -290,12 +292,12 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
 
       <div className="wizard-footer">
         <button className="btn-secondary" onClick={onCancel} disabled={isSubmitting}>
-          Cancel
+          {t('ingestion.wizard.cancel')}
         </button>
         <div className="wizard-nav">
           {step > 1 && (
             <button className="btn-secondary" onClick={handlePrev} disabled={isSubmitting}>
-              Back
+              {t('ingestion.wizard.back')}
             </button>
           )}
           {step < 6 ? (
@@ -308,7 +310,7 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
                 (step === 4 && !formData.target_kb_id)
               }
             >
-              Next
+              {t('ingestion.wizard.next')}
             </button>
           ) : (
             <button 
@@ -316,7 +318,7 @@ export const AddSourceWizard: React.FC<WizardProps> = ({ onComplete, onCancel })
               onClick={handleSubmit}
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Creating...' : 'Create Source'}
+              {isSubmitting ? t('ingestion.wizard.creating') : t('ingestion.wizard.create')}
             </button>
           )}
         </div>
