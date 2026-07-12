@@ -19,6 +19,7 @@ import { ThemeProvider } from './app/providers/ThemeProvider';
 import { AuthProvider } from './app/providers/AuthProvider';
 import { UserProvider } from './app/providers/UserProvider';
 import { KnowledgeBaseProvider } from './app/providers/KnowledgeBaseProvider';
+import { IngestionProvider } from './app/providers/IngestionProvider';
 import { AppShell } from './app/layout/AppShell';
 
 import { ChatContainer } from './features/chat/components/ChatContainer';
@@ -44,19 +45,21 @@ function App() {
       <AuthProvider>
         <UserProvider>
           <KnowledgeBaseProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<AppShell />}>
-                  <Route index element={<ChatPage />} />
-                  <Route path="kb" element={<KBPage />} />
-                  <Route path="documents" element={<DocumentsPage />} />
-                  <Route path="ingestion" element={<IngestionPage />} />
-                  <Route path="artifacts" element={<ArtifactsPage />} />
-                  <Route path="status" element={<StatusPageWrapper />} />
-                  <Route path="settings" element={<SettingsPagePlaceholder />} />
-                </Route>
-              </Routes>
-            </BrowserRouter>
+            <IngestionProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<AppShell />}>
+                    <Route index element={<ChatPage />} />
+                    <Route path="kb" element={<KBPage />} />
+                    <Route path="documents" element={<DocumentsPage />} />
+                    <Route path="ingestion" element={<IngestionPage />} />
+                    <Route path="artifacts" element={<ArtifactsPage />} />
+                    <Route path="status" element={<StatusPageWrapper />} />
+                    <Route path="settings" element={<SettingsPagePlaceholder />} />
+                  </Route>
+                </Routes>
+              </BrowserRouter>
+            </IngestionProvider>
           </KnowledgeBaseProvider>
         </UserProvider>
       </AuthProvider>

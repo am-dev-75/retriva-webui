@@ -16,50 +16,37 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, Folder, X, File, CheckCircle, AlertCircle, Trash2, Link as LinkIcon } from 'lucide-react';
+import { Upload, Folder, X, File as FileIcon, CheckCircle, AlertCircle, Trash2, Link as LinkIcon } from 'lucide-react';
 import { MetadataEditor, MetadataField } from '../../metadata/components/MetadataEditor';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
+import { useIngestion, PendingFile } from '../../../app/providers/IngestionProvider';
 import { gatewayClient } from '../../../api/gateway-client';
 import './Ingestion.css';
-
-interface PendingFile {
-  file: File;
-  path: string;
-  id: string;
-  status: 'pending' | 'uploading' | 'completed' | 'error';
-  progress: number;
-}
-
-type FileWithRelativePath = File & { webkitRelativePath: string };
 
 export const UploadPanel: React.FC = () => {
   const { t } = useTranslation();
   const { selectedKbIds } = useKnowledgeBase();
-  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const {
+    pendingFiles,
+    setPendingFiles,
+    addFiles,
+    removeFile,
+    clearFiles,
+    updateFileMetadata,
+    globalMetadata,
+    setGlobalMetadata,
+    sourceType,
+    setSourceType,
+    forceReingest,
+    setForceReingest,
+  } = useIngestion();
   const [isDragging, setIsDragging] = useState(false);
-  const [globalMetadata, setGlobalMetadata] = useState<MetadataField[]>([]);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
-  const [sourceType, setSourceType] = useState<'auto' | 'mediawiki_export'>('auto');
-  const [forceReingest, setForceReingest] = useState(false);
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
-
-  const addFiles = (files: FileList | null) => {
-    if (!files) return;
-
-    const newFiles: PendingFile[] = Array.from(files).map((file) => ({
-      file,
-      path: (file as FileWithRelativePath).webkitRelativePath || file.name,
-      id: Math.random().toString(36).substring(7),
-      status: 'pending',
-      progress: 0,
-    }));
-
-    setPendingFiles((prev) => [...prev, ...newFiles]);
-  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -76,12 +63,8 @@ export const UploadPanel: React.FC = () => {
     addFiles(e.dataTransfer.files);
   };
 
-  const removeFile = (id: string) => {
-    setPendingFiles((prev) => prev.filter((f) => f.id !== id));
-  };
-
   const handleClear = () => {
-    setPendingFiles([]);
+    clearFiles();
     setIsClearModalOpen(false);
   };
 
@@ -119,6 +102,8 @@ export const UploadPanel: React.FC = () => {
         id: Math.random().toString(36).substring(7),
         status: 'pending',
         progress: 0,
+        addedAt: new Date().toISOString(),
+        metadata: globalMetadata.map(m => ({ ...m })),
       };
       setPendingFiles((prev) => [...prev, newFile]);
       setUrlInput('');
@@ -162,11 +147,15 @@ export const UploadPanel: React.FC = () => {
         
         await Promise.all(chunk.map(async (fileItem) => {
           try {
+            const fileMetadata: Record<string, string> = {};
+            fileItem.metadata.forEach(m => {
+              if (m.key && m.value) fileMetadata[m.key] = m.value;
+            });
             await gatewayClient.uploadFileToBatch(
               batch_id, 
               fileItem.file, 
               fileItem.path,
-              undefined,
+              Object.keys(fileMetadata).length > 0 ? fileMetadata : undefined,
               forceReingest,
             );
             fileItem.status = 'completed';
@@ -196,6 +185,43 @@ export const UploadPanel: React.FC = () => {
     }
   };
 
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const formatTime = (iso: string): string => {
+    try {
+      return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
+  };
+
+  const addFileMetadataField = (fileId: string) => {
+    const file = pendingFiles.find(f => f.id === fileId);
+    if (file) {
+      updateFileMetadata(fileId, [...file.metadata, { key: '', value: '' }]);
+    }
+  };
+
+  const updateFileMetadataField = (fileId: string, index: number, field: Partial<MetadataField>) => {
+    const file = pendingFiles.find(f => f.id === fileId);
+    if (file) {
+      const newMetadata = [...file.metadata];
+      newMetadata[index] = { ...newMetadata[index], ...field };
+      updateFileMetadata(fileId, newMetadata);
+    }
+  };
+
+  const removeFileMetadataField = (fileId: string, index: number) => {
+    const file = pendingFiles.find(f => f.id === fileId);
+    if (file) {
+      updateFileMetadata(fileId, file.metadata.filter((_, i) => i !== index));
+    }
+  };
+
   return (
     <div className="ingestion-container">
       <header className="page-header">
@@ -205,6 +231,7 @@ export const UploadPanel: React.FC = () => {
         </div>
       </header>
 
+      {/* Top row: drop zone + settings side by side */}
       <div className="upload-grid">
         <div 
           className={`drop-zone ${isDragging ? 'dragging' : ''}`}
@@ -218,7 +245,7 @@ export const UploadPanel: React.FC = () => {
           
           <div className="upload-actions">
             <label className="btn btn-primary">
-              <File size={18} />
+              <FileIcon size={18} />
               {t('ingestion.select_files')}
               <input 
                 type="file" 
@@ -245,24 +272,9 @@ export const UploadPanel: React.FC = () => {
           </div>
         </div>
 
-        <div className="pending-files-panel">
+        <div className="upload-settings-panel">
           <div className="panel-header">
-            <h3>{t('ingestion.pending_uploads', { count: pendingFiles.length })}</h3>
-            {pendingFiles.length > 0 && (
-              <div className="btn-group">
-                <button 
-                  className="btn btn-ghost btn-sm" 
-                  onClick={() => setIsClearModalOpen(true)}
-                  title={t('ingestion.clear_list')}
-                >
-                  <Trash2 size={16} />
-                  {t('ingestion.clear_list')}
-                </button>
-                <button className="btn btn-primary btn-sm" onClick={handleUpload}>
-                  {t('ingestion.upload_all')}
-                </button>
-              </div>
-            )}
+            <h3>{t('ingestion.settings_title')}</h3>
           </div>
 
           <div className="metadata-section" style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--color-border)' }}>
@@ -291,7 +303,7 @@ export const UploadPanel: React.FC = () => {
             )}
           </div>
 
-          <div className="metadata-section" style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--color-border)' }}>
+          <div className="metadata-section" style={{ padding: 'var(--spacing-md)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
               <input
                 type="checkbox"
@@ -304,48 +316,128 @@ export const UploadPanel: React.FC = () => {
               {t('ingestion.force_reingest_desc')}
             </p>
           </div>
+        </div>
+      </div>
 
-          <div className="file-list">
-            {pendingFiles.length === 0 ? (
-              <div className="empty-list">{t('ingestion.no_files')}</div>
-            ) : (
-              <>
+      {/* Full-width file list below */}
+      <div className="upload-files-panel">
+        <div className="panel-header">
+          <h3>{t('ingestion.pending_uploads', { count: pendingFiles.length })}</h3>
+          {pendingFiles.length > 0 && (
+            <div className="btn-group">
+              <button 
+                className="btn btn-ghost btn-sm" 
+                onClick={() => setIsClearModalOpen(true)}
+                title={t('ingestion.clear_list')}
+              >
+                <Trash2 size={16} />
+                {t('ingestion.clear_list')}
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={handleUpload}>
+                {t('ingestion.upload_all')}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="file-table-wrapper">
+          {pendingFiles.length === 0 ? (
+            <div className="empty-list">{t('ingestion.no_files')}</div>
+          ) : (
+            <table className="file-table">
+              <thead>
+                <tr>
+                  <th>{t('ingestion.col_filename')}</th>
+                  <th>{t('ingestion.col_path')}</th>
+                  <th className="col-size">{t('ingestion.col_size')}</th>
+                  <th className="col-added">{t('ingestion.col_added')}</th>
+                  <th className="col-metadata">{t('ingestion.col_metadata')}</th>
+                  <th className="col-status">{t('ingestion.col_status')}</th>
+                  <th className="col-action"></th>
+                </tr>
+              </thead>
+              <tbody>
                 {pendingFiles.slice(0, 100).map((pf) => (
-                  <div key={pf.id} className={`file-item ${pf.status}`}>
-                    <div className="file-info">
-                      <File size={16} />
-                      <div className="file-details">
-                        <span className="file-name">{pf.file.name}</span>
-                        <span className="file-path">{pf.path}</span>
+                  <tr key={pf.id} className={`file-row ${pf.status}`}>
+                    <td className="cell-filename">
+                      <FileIcon size={14} />
+                      <span className="file-name">{pf.file.name}</span>
+                    </td>
+                    <td className="cell-path">
+                      <span className="file-path" title={pf.path}>{pf.path}</span>
+                    </td>
+                    <td className="col-size">{formatFileSize(pf.file.size)}</td>
+                    <td className="col-added">{formatTime(pf.addedAt)}</td>
+                    <td className="col-metadata">
+                      <div className="file-metadata-list">
+                        {pf.metadata.map((field, idx) => (
+                          <div key={idx} className="file-metadata-row">
+                            {pf.status === 'pending' ? (
+                              <>
+                                <input
+                                  type="text"
+                                  className="input-field xs"
+                                  placeholder={t('metadata.key_placeholder')}
+                                  value={field.key}
+                                  onChange={(e) => updateFileMetadataField(pf.id, idx, { key: e.target.value })}
+                                />
+                                <input
+                                  type="text"
+                                  className="input-field xs"
+                                  placeholder={t('metadata.value_placeholder')}
+                                  value={field.value}
+                                  onChange={(e) => updateFileMetadataField(pf.id, idx, { value: e.target.value })}
+                                />
+                                <button
+                                  className="btn-icon sm"
+                                  onClick={() => removeFileMetadataField(pf.id, idx)}
+                                  title={t('ingestion.remove_metadata')}
+                                >
+                                  <X size={12} />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <span className="file-metadata-key">{field.key}</span>
+                                <span className="file-metadata-sep">:</span>
+                                <span className="file-metadata-value">{field.value}</span>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                        {pf.status === 'pending' && (
+                          <button
+                            className="btn btn-ghost btn-sm add-metadata-btn"
+                            onClick={() => addFileMetadataField(pf.id)}
+                          >
+                            {t('ingestion.add_metadata')}
+                          </button>
+                        )}
                       </div>
-                    </div>
-                    
-                    <div className="file-status">
-                      {pf.status === 'pending' && (
-                        <button className="btn-icon" onClick={() => removeFile(pf.id)}>
-                          <X size={16} />
-                        </button>
-                      )}
+                    </td>
+                    <td className="col-status">
                       {pf.status === 'uploading' && <div className="spinner-sm" />}
                       {pf.status === 'completed' && <CheckCircle size={16} className="text-success" />}
                       {pf.status === 'error' && <AlertCircle size={16} className="text-danger" />}
-                    </div>
-
-                    {pf.status === 'uploading' && (
-                      <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: `${pf.progress}%` }} />
-                      </div>
-                    )}
-                  </div>
+                      {pf.status === 'pending' && <span className="status-pending">{t('common.processing')}</span>}
+                    </td>
+                    <td className="col-action">
+                      {pf.status === 'pending' && (
+                        <button className="btn-icon" onClick={() => removeFile(pf.id)} title={t('ingestion.remove_file')}>
+                          <X size={16} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
                 ))}
-                {pendingFiles.length > 100 && (
-                  <div className="file-item summary" style={{ justifyContent: 'center', color: 'var(--color-text-muted)', padding: '1rem' }}>
-                    <span>{t('ingestion.more_files', { count: pendingFiles.length - 100 })}</span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+              </tbody>
+            </table>
+          )}
+          {pendingFiles.length > 100 && (
+            <div className="file-item summary" style={{ justifyContent: 'center', color: 'var(--color-text-muted)', padding: '1rem' }}>
+              <span>{t('ingestion.more_files', { count: pendingFiles.length - 100 })}</span>
+            </div>
+          )}
         </div>
       </div>
 
