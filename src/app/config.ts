@@ -37,5 +37,5 @@ export const CONFIG = {
     ? import.meta.env.VITE_RETRIVA_ENABLE_VOICE_INPUT === 'true'
     : import.meta.env.DEV,
   SPEECH_INPUT_MODE: import.meta.env.VITE_SPEECH_INPUT_MODE || 'disabled',
-  APP_VERSION: '1.6.1',
+  APP_VERSION: '1.7.0',
 };
