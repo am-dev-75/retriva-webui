@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { gatewayClient } from '../../../api/gateway-client';
 import { ConnectedSource } from '../../../api/types';
 import { AddSourceWizard } from './AddSourceWizard';
-import { RefreshCw, AlertCircle, ChevronDown, CheckCircle, Clock } from 'lucide-react';
+import { RefreshCw, AlertCircle, ChevronDown, CheckCircle, Clock, Power, PowerOff, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
 import { mapSourceStatus, getStatusBadgeClass } from '../utils/status-mapper';
 import { formatDateTime } from '../../../lib/formatting';
 import './ConnectedSourcesList.css';
@@ -29,6 +29,7 @@ export const ConnectedSourcesList: React.FC = () => {
   const [sources, setSources] = useState<ConnectedSource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   
   const [view, setView] = useState<'list' | 'add' | 'detail'>('list');
   const [expandedSourceIds, setExpandedSourceIds] = useState<Set<string>>(new Set());
@@ -65,6 +66,31 @@ export const ConnectedSourcesList: React.FC = () => {
     });
   };
 
+  const expandAll = () => {
+    setExpandedSourceIds(new Set(sources.map(s => s.id)));
+  };
+
+  const collapseAll = () => {
+    setExpandedSourceIds(new Set());
+  };
+
+  const handleToggleEnabled = async (source: ConnectedSource) => {
+    setTogglingId(source.id);
+    try {
+      if (source.status === 'PAUSED') {
+        await gatewayClient.resumeSource(source.id);
+      } else {
+        await gatewayClient.pauseSource(source.id);
+      }
+      await fetchSources();
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Failed to toggle source');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   if (view === 'add') {
     return <AddSourceWizard onComplete={() => setView('list')} onCancel={() => setView('list')} />;
   }
@@ -77,6 +103,14 @@ export const ConnectedSourcesList: React.FC = () => {
           <button className="btn-secondary" onClick={fetchSources} disabled={isLoading}>
             <RefreshCw size={16} className={isLoading ? 'spinning' : ''} />
             {t('ingestion.sources.refresh')}
+          </button>
+          <button className="btn-secondary" onClick={expandAll} disabled={isLoading || sources.length === 0}>
+            <ChevronsDownUp size={16} />
+            {t('ingestion.sources.expand_all', 'Espandi tutti')}
+          </button>
+          <button className="btn-secondary" onClick={collapseAll} disabled={isLoading || sources.length === 0}>
+            <ChevronsUpDown size={16} />
+            {t('ingestion.sources.collapse_all', 'Comprimi tutti')}
           </button>
           {/* Add Source button — disabled for now; will be re-enabled when
               the source creation wizard supports the full connector lifecycle.
@@ -112,10 +146,13 @@ export const ConnectedSourcesList: React.FC = () => {
               <div
                 key={source.id}
                 className={`source-card ${isExpanded ? 'expanded' : ''}`}
-                onClick={() => toggleSourceExpanded(source.id)}
               >
-                {/* Summary row */}
-                <div className="source-card-summary">
+                {/* Summary row — click here to expand/collapse */}
+                <div
+                  className="source-card-summary"
+                  onClick={() => toggleSourceExpanded(source.id)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <button
                     className={`expand-btn ${isExpanded ? 'active' : ''}`}
                     onClick={(e) => { e.stopPropagation(); toggleSourceExpanded(source.id); }}
@@ -130,10 +167,30 @@ export const ConnectedSourcesList: React.FC = () => {
                   <div className="source-card-type">
                     <span className="capitalize">{source.connector_type}</span>
                   </div>
+                  <div className="source-card-collection">
+                    <span className="detail-label">{t('ingestion.sources.collection', 'Collection')}</span>
+                    <span className="value mono">{source.collection || '—'}</span>
+                  </div>
+                  <div className="source-card-kbs">
+                    <span className="detail-label">{t('ingestion.sources.target_kb', 'KB di destinazione')}</span>
+                    <span className="value mono">{source.target_kb_id}</span>
+                  </div>
                   <div className="source-card-status">
                     <span className={`source-status-badge ${getStatusBadgeClass(source.status)}`}>
                       {mapSourceStatus(source.status)}
                     </span>
+                  </div>
+                  <div className="source-card-toggle">
+                    <button
+                      className={`toggle-btn ${source.status === 'PAUSED' ? 'toggle-off' : 'toggle-on'}`}
+                      onClick={(e) => { e.stopPropagation(); handleToggleEnabled(source); }}
+                      disabled={togglingId === source.id || source.status === 'DELETING' || source.status === 'DELETED'}
+                      title={source.status === 'PAUSED' ? t('ingestion.sources.enable', 'Enable') : t('ingestion.sources.disable', 'Disable')}
+                    >
+                      {source.status === 'PAUSED'
+                        ? <PowerOff size={16} />
+                        : <Power size={16} />}
+                    </button>
                   </div>
                   <div className="source-card-stats">
                     <span className="stat-item" title={t('ingestion.sources.indexed_items')}>
@@ -172,6 +229,10 @@ export const ConnectedSourcesList: React.FC = () => {
                       <div className="detail-item">
                         <span className="label">{t('ingestion.sources.target_kb')}</span>
                         <span className="value mono">{source.target_kb_id}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="label">{t('ingestion.sources.collection', 'Collection')}</span>
+                        <span className="value mono">{source.collection || '—'}</span>
                       </div>
                       <div className="detail-item">
                         <span className="label">{t('ingestion.sources.status')}</span>

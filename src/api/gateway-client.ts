@@ -31,6 +31,7 @@ import {
   ConnectedSource,
   CreateSourceRequest,
   SourceRun,
+  SourceStatus,
   AuthInfo
 } from './types';
 
@@ -331,25 +332,62 @@ class GatewayClient {
   }
   // Connected Sources
   async getSources(): Promise<ConnectedSource[]> {
-    return this.request<ConnectedSource[]>('/gateway/sources');
+    const raw = await this.request<Record<string, unknown>[]>('/gateway/sources');
+    return raw.map(s => this._mapSource(s));
   }
 
   async getSource(sourceId: string): Promise<ConnectedSource> {
-    return this.request<ConnectedSource>(`/gateway/sources/${sourceId}`);
+    const raw = await this.request<Record<string, unknown>>(`/gateway/sources/${sourceId}`);
+    return this._mapSource(raw);
   }
 
   async createSource(sourceData: CreateSourceRequest): Promise<ConnectedSource> {
-    return this.request<ConnectedSource>('/gateway/sources', {
+    const raw = await this.request<Record<string, unknown>>('/gateway/sources', {
       method: 'POST',
       body: JSON.stringify(sourceData),
     });
+    return this._mapSource(raw);
   }
 
   async updateSource(sourceId: string, sourceData: Partial<ConnectedSource>): Promise<ConnectedSource> {
-    return this.request<ConnectedSource>(`/gateway/sources/${sourceId}`, {
+    const raw = await this.request<Record<string, unknown>>(`/gateway/sources/${sourceId}`, {
       method: 'PATCH',
       body: JSON.stringify(sourceData),
     });
+    return this._mapSource(raw);
+  }
+
+  /**
+   * Map the gateway's SourceResponse (which uses source_id and nests config
+   * fields inside a config dict) to the WebUI's ConnectedSource (which uses
+   * id and flattens config fields onto the top-level object).
+   */
+  _mapSource(raw: Record<string, unknown>): ConnectedSource {
+    const config = (raw.config ?? {}) as Record<string, unknown>;
+    return {
+      id: (raw.source_id ?? raw.id ?? '') as string,
+      display_name: (raw.display_name ?? '') as string,
+      connector_type: (raw.connector_type ?? '') as string,
+      target_kb_id: (raw.target_kb_id ?? 'default') as string,
+      collection: (raw.collection ?? '') as string,
+      kb_ids: (raw.kb_ids ?? []) as string[],
+      status: (raw.status ?? 'CREATED') as SourceStatus,
+      last_sync_at: raw.last_sync_at as string | undefined,
+      next_sync_at: raw.next_sync_at as string | undefined,
+      indexed_item_count: (raw.indexed_item_count ?? 0) as number,
+      failed_item_count: (raw.failed_item_count ?? 0) as number,
+      created_at: (raw.created_at ?? '') as string,
+      updated_at: raw.updated_at as string | undefined,
+      api_url: (config.api_url ?? '') as string,
+      auth_mode: (config.auth_mode ?? 'none') as string,
+      allowed_namespaces: config.allowed_namespaces as number[] | undefined,
+      include_categories: config.include_categories as string[] | undefined,
+      exclude_categories: config.exclude_categories as string[] | undefined,
+      sync_interval_minutes: config.sync_interval_minutes as number | undefined,
+      delete_policy: config.delete_policy as string | undefined,
+      availability_policy: config.availability_policy as string | undefined,
+      metadata: (raw.metadata ?? config.metadata ?? {}) as Record<string, string>,
+    } as ConnectedSource;
   }
 
   async deleteSource(sourceId: string): Promise<void> {

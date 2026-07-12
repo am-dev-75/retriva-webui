@@ -153,19 +153,22 @@ export interface ConnectedSource extends MediaWikiSourceConfig {
   display_name: string;
   connector_type: ConnectorType;
   target_kb_id: string;
+  collection: string;
+  kb_ids: string[];
   status: SourceStatus;
   last_sync_at?: string;
   next_sync_at?: string;
   indexed_item_count: number;
   failed_item_count: number;
-  created_at: string;
-  updated_at?: string;
+  created_at: string; updated_at?: string;
 }
 
 export interface CreateSourceRequest extends MediaWikiSourceConfig {
   display_name: string;
   connector_type: ConnectorType;
   target_kb_id: string;
+  collection?: string;
+  kb_ids?: string[];
   credentials?: string;
 }
 
