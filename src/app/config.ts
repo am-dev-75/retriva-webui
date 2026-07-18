@@ -37,7 +37,7 @@ export const CONFIG = {
     ? import.meta.env.VITE_RETRIVA_ENABLE_VOICE_INPUT === 'true'
     : import.meta.env.DEV,
   SPEECH_INPUT_MODE: import.meta.env.VITE_SPEECH_INPUT_MODE || 'disabled',
-  APP_VERSION: '1.4.0',
+  APP_VERSION: '1.4.0-3d-integration-20260716',
   // --- Retriva × 3D integration ---
   // Chat is routed to the retriva-agent (answers via RAG AND moves the 3D model)
   // instead of straight to the gateway.
