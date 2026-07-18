@@ -105,15 +105,26 @@ class GatewayClient {
     metadataFilterMode?: MetadataFilterMode,
     signal?: AbortSignal
   ): Promise<Message> {
+    // Retriva × 3D (Option A): the chat TEXT is served verbatim by Retriva's gateway
+    // (unchanged flow). The agent is used ONLY to move the 3D model.
+    // Fire the 3D move IN PARALLEL with the text (question only), fire-and-forget, so it can
+    // never affect the chat text. The agent picks the part with the same model used for the
+    // chat (see retriva-agent/agent.py: move()).
+    fetch(`${CONFIG.AGENT_BASE_URL}/agent/move`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    }).catch(() => { /* ignore: 3D movement is best-effort */ });
+
     const authHeaders = await this._authHeaders();
     const response = await fetch(`${this.baseUrl}/gateway/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders },
-      body: JSON.stringify({ 
-        kb_ids: kbIds, 
+      body: JSON.stringify({
+        kb_ids: kbIds,
         message,
         metadata_filters: metadataFilters,
-        metadata_filter_mode: metadataFilterMode
+        metadata_filter_mode: metadataFilterMode,
       }),
       signal,
     });
@@ -134,7 +145,8 @@ class GatewayClient {
       throw new Error(errorMsg);
     }
 
-    return response.json();
+    const gatewayMessage: Message = await response.json();
+    return gatewayMessage;
   }
 
   // Speech to Text

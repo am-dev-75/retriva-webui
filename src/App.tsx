@@ -28,9 +28,20 @@ import { DocumentList } from './features/documents/components/DocumentList';
 import { ArtifactList } from './features/artifacts/components/ArtifactList';
 import { SettingsPage } from './features/settings/components/SettingsPage';
 import { StatusPage } from './features/status/components/StatusPage';
+import { CONFIG } from './app/config';
 
 // Lazy load or placeholder features
-const ChatPage = () => <ChatContainer />;
+// Retriva × 3D: chat on the left, live 3D viewer on the right.
+const ChatPage = () => (
+  <div style={{ display: 'flex', height: '100%', width: '100%', minHeight: 0 }}>
+    <div style={{ flex: '0 0 46%', minWidth: 360, minHeight: 0, overflow: 'hidden',
+                  borderRight: '1px solid var(--color-border, #2a2f3a)' }}>
+      <ChatContainer />
+    </div>
+    <iframe title="3D model" src={CONFIG.VIEWER_URL}
+            style={{ flex: 1, border: 'none', width: '100%', height: '100%' }} />
+  </div>
+);
 const KBPage = () => <KBList />;
 const DocumentsPage = () => <DocumentList />;
 const IngestionPage = () => <IngestionLanding />;

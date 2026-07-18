@@ -38,4 +38,10 @@ export const CONFIG = {
     : import.meta.env.DEV,
   SPEECH_INPUT_MODE: import.meta.env.VITE_SPEECH_INPUT_MODE || 'disabled',
   APP_VERSION: '1.4.0',
+  // --- Retriva × 3D integration ---
+  // Chat is routed to the retriva-agent (answers via RAG AND moves the 3D model)
+  // instead of straight to the gateway.
+  AGENT_BASE_URL: import.meta.env.VITE_RETRIVA_AGENT_BASE_URL || 'http://localhost:8090',
+  // The 3D viewer embedded next to the chat.
+  VIEWER_URL: import.meta.env.VITE_VIEWER_URL || 'http://localhost:5180/viewer-proto/index.html?embed=1',
 };
