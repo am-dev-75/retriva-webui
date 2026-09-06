@@ -29,7 +29,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  Check
+  Check,
+  Briefcase
 } from 'lucide-react';
 import { useTheme } from '../providers/ThemeProvider';
 import { useKnowledgeBase } from '../providers/KnowledgeBaseProvider';
@@ -38,6 +39,7 @@ import './AppShell.css';
 
 const getNavItems = (t: TFunction) => [
   { path: '/', icon: MessageSquare, label: t('nav.chat') },
+  { path: '/crm', icon: Briefcase, label: 'CRM Assistant' },
   { path: '/documents', icon: Files, label: t('nav.documents') },
   { path: '/ingestion', icon: Upload, label: t('nav.ingestion') },
   { path: '/artifacts', icon: FileText, label: t('nav.artifacts') },

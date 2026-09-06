@@ -32,7 +32,12 @@ import {
   CreateSourceRequest,
   SourceRun,
   SourceStatus,
-  AuthInfo
+  AuthInfo,
+  SessionAttachment,
+  ParsedAttachment,
+  SessionArtifact,
+  CrmJobResponse,
+  CrmJobStatus
 } from './types';
 
 interface DocumentListResponse {
@@ -416,6 +421,82 @@ class GatewayClient {
 
   async getSourceRuns(sourceId: string): Promise<SourceRun[]> {
     return this.request<SourceRun[]>(`/gateway/sources/${sourceId}/runs`);
+  }
+
+  // --- Session Attachments ---
+  async uploadSessionAttachment(sessionId: string, file: File): Promise<SessionAttachment> {
+    const authHeaders = await this._authHeaders();
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${this.baseUrl}/api/v2/sessions/${sessionId}/attachments`, {
+      method: 'POST',
+      headers: { ...authHeaders },
+      body: formData,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(err.detail || 'Upload failed');
+    }
+    return response.json();
+  }
+
+  async listSessionAttachments(sessionId: string): Promise<SessionAttachment[]> {
+    return this.request<SessionAttachment[]>(`/api/v2/sessions/${sessionId}/attachments`);
+  }
+
+  async parseSessionAttachment(sessionId: string, attachmentId: string): Promise<ParsedAttachment> {
+    return this.request<ParsedAttachment>(`/api/v2/sessions/${sessionId}/attachments/${attachmentId}/parse`, {
+      method: 'POST',
+    });
+  }
+
+  async deleteSessionAttachment(sessionId: string, attachmentId: string): Promise<void> {
+    await this.request<void>(`/api/v2/sessions/${sessionId}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // --- Session Artifacts ---
+  async listSessionArtifacts(sessionId: string): Promise<SessionArtifact[]> {
+    return this.request<SessionArtifact[]>(`/api/v2/sessions/${sessionId}/artifacts`);
+  }
+
+  async downloadSessionArtifact(sessionId: string, artifactId: string): Promise<Blob> {
+    const authHeaders = await this._authHeaders();
+    const response = await fetch(`${this.baseUrl}/api/v2/sessions/${sessionId}/artifacts/${artifactId}/content`, {
+      headers: { ...authHeaders },
+    });
+    if (!response.ok) throw new Error('Download failed');
+    return response.blob();
+  }
+
+  // --- CRM Assistant ---
+  async crmQualify(sessionId: string, attachmentId: string, kbId: string): Promise<CrmJobResponse> {
+    return this.request<CrmJobResponse>('/api/v2/crm/qualify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, attachment_id: attachmentId, kb_id: kbId }),
+    });
+  }
+
+  async crmGetJob(jobId: string): Promise<CrmJobStatus> {
+    return this.request<CrmJobStatus>(`/api/v2/crm/jobs/${jobId}`);
+  }
+
+  async crmCancelJob(jobId: string): Promise<void> {
+    await this.request<void>(`/api/v2/crm/jobs/${jobId}/cancel`, { method: 'POST' });
+  }
+
+  async crmGetPortfolio(kbId: string): Promise<unknown> {
+    return this.request<unknown>(`/api/v2/crm/portfolio/${kbId}`);
+  }
+
+  async crmGetIcp(kbId: string): Promise<unknown[]> {
+    return this.request<unknown[]>(`/api/v2/crm/icp/${kbId}`);
+  }
+
+  async crmHealth(): Promise<{ status: string; extension?: string }> {
+    return this.request<{ status: string; extension?: string }>('/api/v2/crm/health');
   }
 }
 

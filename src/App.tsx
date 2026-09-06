@@ -23,6 +23,7 @@ import { IngestionProvider } from './app/providers/IngestionProvider';
 import { AppShell } from './app/layout/AppShell';
 
 import { ChatContainer } from './features/chat/components/ChatContainer';
+import { CrmAssistant } from './features/crm/components/CrmAssistant';
 import { KBList } from './features/knowledge-bases/components/KBList';
 import { IngestionLanding } from './features/ingestion/components/IngestionLanding';
 import { DocumentList } from './features/documents/components/DocumentList';
@@ -32,6 +33,7 @@ import { StatusPage } from './features/status/components/StatusPage';
 
 // Lazy load or placeholder features
 const ChatPage = () => <ChatContainer />;
+const CrmPage = () => <CrmAssistant />;
 const KBPage = () => <KBList />;
 const DocumentsPage = () => <DocumentList />;
 const IngestionPage = () => <IngestionLanding />;
@@ -50,6 +52,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<AppShell />}>
                     <Route index element={<ChatPage />} />
+                    <Route path="crm" element={<CrmPage />} />
                     <Route path="kb" element={<KBPage />} />
                     <Route path="documents" element={<DocumentsPage />} />
                     <Route path="ingestion" element={<IngestionPage />} />

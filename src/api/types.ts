@@ -189,3 +189,82 @@ export interface SourceStatusSummary {
   indexed_item_count: number;
   failed_item_count: number;
 }
+
+// --- Session Attachments & Artifacts ---
+
+export interface SessionAttachment {
+  attachment_id: string;
+  session_id: string;
+  original_filename: string;
+  media_type: string;
+  size: number;
+  checksum: string;
+  upload_time: string;
+  expiration_time: string;
+  status: string;
+  selected_parser: string | null;
+  parsed_element_count: number;
+  parse_warnings: string[];
+  failure_info: string | null;
+}
+
+export interface ParsedAttachment {
+  attachment_id: string;
+  session_id: string;
+  media_type: string;
+  parser_name: string;
+  parsed_at: string;
+  warnings: string[];
+  elements: Array<{
+    element_type: string;
+    text: string;
+    page: number | null;
+    heading_path: string[];
+    table_markdown: string | null;
+    table_html: string | null;
+    source_uri: string;
+    parser_name: string;
+    confidence: number | null;
+  }>;
+}
+
+export interface SessionArtifact {
+  artifact_id: string;
+  session_id: string;
+  filename: string;
+  media_type: string;
+  size: number;
+  created_at: string;
+  expiration_time: string;
+  status: string;
+  source_attachment_id: string | null;
+  artifact_kind: string;
+  metadata: Record<string, unknown>;
+  failure_info: string | null;
+}
+
+// --- CRM Assistant ---
+
+export interface CrmJobResponse {
+  status: string;
+  job_id: string;
+  session_id: string;
+  kb_id: string;
+}
+
+export interface CrmJobStatus {
+  job_id: string;
+  state: string;
+  progress: number;
+  stage_detail: string;
+  candidate_count: number;
+  result_count: number;
+  artifact_ids: string[];
+  icp_id: string | null;
+  icp_version: number | null;
+  portfolio_id: string | null;
+  portfolio_version: number | null;
+  analysis_mode: string | null;
+  error: string | null;
+  warnings: string[];
+}
