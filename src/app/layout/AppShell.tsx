@@ -30,22 +30,29 @@ import {
   X,
   ChevronDown,
   Check,
-  Briefcase
+  Briefcase,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { useTheme } from '../providers/ThemeProvider';
 import { useKnowledgeBase } from '../providers/KnowledgeBaseProvider';
 import { CONFIG } from '../config';
+import { gatewayClient } from '../../api/gateway-client';
 import './AppShell.css';
 
 const getNavItems = (t: TFunction) => [
   { path: '/', icon: MessageSquare, label: t('nav.chat') },
-  { path: '/crm', icon: Briefcase, label: 'CRM Assistant' },
   { path: '/documents', icon: Files, label: t('nav.documents') },
   { path: '/ingestion', icon: Upload, label: t('nav.ingestion') },
   { path: '/artifacts', icon: FileText, label: t('nav.artifacts') },
   { path: '/status', icon: Activity, label: t('status_page.title') },
   { path: '/kb', icon: Database, label: t('nav.kb') },
   { path: '/settings', icon: Settings, label: t('nav.settings') },
+];
+
+// Retriva Pro extension entries (shown after a separator, disabled when unhealthy).
+const PRO_EXTENSIONS = [
+  { path: '/crm', icon: Briefcase, label: 'CRM Assistant', healthKey: 'crm' },
 ];
 
 export const AppShell: React.FC = () => {
@@ -55,9 +62,32 @@ export const AppShell: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isKbDropdownOpen, setIsKbDropdownOpen] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [proHealth, setProHealth] = useState<Record<string, boolean>>({});
   const kbDropdownRef = useRef<HTMLDivElement>(null);
   
   const navItems = getNavItems(t);
+
+  // Check Pro extension health on mount.
+  useEffect(() => {
+    const checkHealth = async () => {
+      const results: Record<string, boolean> = {};
+      for (const ext of PRO_EXTENSIONS) {
+        try {
+          if (ext.healthKey === 'crm') {
+            const resp = await gatewayClient.crmHealth();
+            results[ext.healthKey] = resp.status === 'ok';
+          }
+        } catch {
+          results[ext.healthKey] = false;
+        }
+      }
+      setProHealth(results);
+    };
+    checkHealth();
+    const interval = setInterval(checkHealth, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -80,45 +110,87 @@ export const AppShell: React.FC = () => {
 
   return (
     <div className="app-shell">
-      <aside className={`app-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="app-logo">
-            <img src="/logo.jpg" alt="Retriva Logo" className="logo-img" />
-            <span className="logo-text">{CONFIG.APP_NAME}</span>
+      {!sidebarHidden && (
+        <aside className={`app-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+          <div className="sidebar-header">
+            <div className="app-logo">
+              <img src="/logo.jpg" alt="Retriva Logo" className="logo-img" />
+              <span className="logo-text">{CONFIG.APP_NAME}</span>
+            </div>
+            <button className="mobile-close" onClick={() => setIsMobileMenuOpen(false)}>
+              <X size={20} />
+            </button>
           </div>
-          <button className="mobile-close" onClick={() => setIsMobileMenuOpen(false)}>
-            <X size={20} />
-          </button>
-        </div>
 
-        <nav className="sidebar-nav">
-          {navItems.map((item) => (
-            <NavLink 
-              key={item.path} 
-              to={item.path} 
-              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => setIsMobileMenuOpen(false)}
+          <nav className="sidebar-nav">
+            {navItems.map((item) => (
+              <NavLink 
+                key={item.path} 
+                to={item.path} 
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <item.icon size={20} />
+                <span className="nav-label">{item.label}</span>
+              </NavLink>
+            ))}
+
+            {/* Separator + Pro extensions */}
+            <div className="nav-separator" />
+            <div className="nav-section-label">Retriva Pro</div>
+            {PRO_EXTENSIONS.map((ext) => {
+              const isHealthy = proHealth[ext.healthKey] ?? false;
+              return (
+                <NavLink
+                  key={ext.path}
+                  to={ext.path}
+                  className={`nav-item pro-extension ${!isHealthy ? 'disabled' : ''}`}
+                  onClick={(e) => {
+                    if (!isHealthy) e.preventDefault();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  style={!isHealthy ? { pointerEvents: 'none', opacity: 0.4 } : undefined}
+                >
+                  <ext.icon size={20} />
+                  <span className="nav-label">{ext.label}</span>
+                  {!isHealthy && <span className="nav-disabled-badge">off</span>}
+                </NavLink>
+              );
+            })}
+          </nav>
+
+          <div className="sidebar-footer">
+            <button
+              className="sidebar-toggle-btn"
+              onClick={() => setSidebarHidden(true)}
+              title="Hide sidebar"
             >
-              <item.icon size={20} />
-              <span className="nav-label">{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="theme-indicator">
-            <span className="theme-dot" style={{ backgroundColor: resolvedTheme === 'dark' ? '#3b82f6' : '#2563eb' }}></span>
-            <span className="theme-label">{theme.charAt(0).toUpperCase() + theme.slice(1)} Mode</span>
+              <PanelLeftClose size={18} />
+              <span className="nav-label">Hide</span>
+            </button>
+            <div className="theme-indicator">
+              <span className="theme-dot" style={{ backgroundColor: resolvedTheme === 'dark' ? '#3b82f6' : '#2563eb' }}></span>
+              <span className="theme-label">{theme.charAt(0).toUpperCase() + theme.slice(1)} Mode</span>
+            </div>
+            <div className="app-version">
+              v{CONFIG.APP_VERSION}
+            </div>
           </div>
-          <div className="app-version">
-            v{CONFIG.APP_VERSION}
-          </div>
-        </div>
-      </aside>
+        </aside>
+      )}
 
       <main className="app-main">
         <header className="main-header">
           <div className="header-content-wrapper">
+            {sidebarHidden && (
+              <button
+                className="sidebar-show-btn"
+                onClick={() => setSidebarHidden(false)}
+                title="Show sidebar"
+              >
+                <PanelLeftOpen size={20} />
+              </button>
+            )}
             <button className="mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(true)}>
               <Menu size={24} />
             </button>

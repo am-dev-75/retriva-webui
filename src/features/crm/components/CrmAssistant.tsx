@@ -16,10 +16,10 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, FileText, Download, Play, Loader2, CheckCircle2, AlertCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Upload, FileText, Download, Play, Loader2, CheckCircle2, AlertCircle, XCircle, RefreshCw, Save, Sparkles } from 'lucide-react';
 import { gatewayClient } from '../../../api/gateway-client';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
-import type { SessionAttachment, SessionArtifact, CrmJobStatus } from '../../../api/types';
+import type { SessionAttachment, SessionArtifact, CrmJobStatus, GlobalVarResponse } from '../../../api/types';
 import './CrmAssistant.css';
 
 const SESSION_ID_KEY = 'retriva_crm_session_id';
@@ -44,6 +44,16 @@ export const CrmAssistant: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ICP / CCO global variables
+  const [icpText, setIcpText] = useState('');
+  const [icpMeta, setIcpMeta] = useState<GlobalVarResponse | null>(null);
+  const [ccoText, setCcoText] = useState('');
+  const [ccoMeta, setCcoMeta] = useState<GlobalVarResponse | null>(null);
+  const [icpSaving, setIcpSaving] = useState(false);
+  const [ccoSaving, setCcoSaving] = useState(false);
+  const [icpUpdating, setIcpUpdating] = useState(false);
+  const [ccoUpdating, setCcoUpdating] = useState(false);
+
   const kbId = selectedKbIds.length > 0 ? selectedKbIds[0] : 'default';
 
   // Persist session ID.
@@ -66,6 +76,88 @@ export const CrmAssistant: React.FC = () => {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Load ICP / CCO text when KB changes.
+  const loadGlobalVars = useCallback(async () => {
+    try {
+      const icp = await gatewayClient.crmGetIcpText(kbId);
+      setIcpText(icp.content || '');
+      setIcpMeta(icp);
+    } catch {
+      setIcpText('');
+      setIcpMeta(null);
+    }
+    try {
+      const cco = await gatewayClient.crmGetCcoText(kbId);
+      setCcoText(cco.content || '');
+      setCcoMeta(cco);
+    } catch {
+      setCcoText('');
+      setCcoMeta(null);
+    }
+  }, [kbId]);
+
+  useEffect(() => {
+    loadGlobalVars();
+  }, [loadGlobalVars]);
+
+  const handleSaveIcp = useCallback(async () => {
+    setIcpSaving(true);
+    setError(null);
+    try {
+      const resp = await gatewayClient.crmSaveIcpText(kbId, icpText);
+      setIcpMeta(resp);
+      setInfo('ICP saved.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save ICP');
+    } finally {
+      setIcpSaving(false);
+    }
+  }, [kbId, icpText]);
+
+  const handleUpdateIcp = useCallback(async () => {
+    setIcpUpdating(true);
+    setError(null);
+    try {
+      const resp = await gatewayClient.crmUpdateIcp(kbId);
+      setIcpText(resp.content || '');
+      setIcpMeta(resp);
+      setInfo('ICP updated from KB.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update ICP from KB');
+    } finally {
+      setIcpUpdating(false);
+    }
+  }, [kbId]);
+
+  const handleSaveCco = useCallback(async () => {
+    setCcoSaving(true);
+    setError(null);
+    try {
+      const resp = await gatewayClient.crmSaveCcoText(kbId, ccoText);
+      setCcoMeta(resp);
+      setInfo('CCO saved.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save CCO');
+    } finally {
+      setCcoSaving(false);
+    }
+  }, [kbId, ccoText]);
+
+  const handleUpdateCco = useCallback(async () => {
+    setCcoUpdating(true);
+    setError(null);
+    try {
+      const resp = await gatewayClient.crmUpdateCco(kbId);
+      setCcoText(resp.content || '');
+      setCcoMeta(resp);
+      setInfo('CCO updated from KB.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update CCO from KB');
+    } finally {
+      setCcoUpdating(false);
+    }
+  }, [kbId]);
 
   // Poll job status.
   useEffect(() => {
@@ -200,6 +292,82 @@ export const CrmAssistant: React.FC = () => {
         <button className="crm-btn-secondary" onClick={handleNewSession} title="New session">
           <RefreshCw size={14} /> New Session
         </button>
+      </div>
+
+      {/* ICP global variable */}
+      <div className="crm-section crm-global-var">
+        <div className="crm-global-var-header">
+          <h2>Ideal Customer Profile (ICP)</h2>
+          <div className="crm-global-var-actions">
+            <button
+              className="crm-btn-secondary"
+              onClick={handleUpdateIcp}
+              disabled={icpUpdating}
+              title="Rebuild ICP from KB documents tagged 'type: potential_customer'"
+            >
+              {icpUpdating ? <Loader2 size={14} className="crm-icon-spin" /> : <Sparkles size={14} />}
+              Update from KB
+            </button>
+            <button
+              className="crm-btn-primary crm-btn-sm"
+              onClick={handleSaveIcp}
+              disabled={icpSaving}
+            >
+              {icpSaving ? <Loader2 size={14} className="crm-icon-spin" /> : <Save size={14} />}
+              Save
+            </button>
+          </div>
+        </div>
+        {icpMeta?.updated_at && (
+          <p className="crm-global-var-meta">
+            Last updated: {new Date(icpMeta.updated_at).toLocaleString()} (source: {icpMeta.source})
+          </p>
+        )}
+        <textarea
+          className="crm-global-var-textarea"
+          value={icpText}
+          onChange={(e) => setIcpText(e.target.value)}
+          placeholder="The ICP will appear here after update or manual entry. You can edit this text freely."
+          rows={12}
+        />
+      </div>
+
+      {/* CCO global variable */}
+      <div className="crm-section crm-global-var">
+        <div className="crm-global-var-header">
+          <h2>Company Commercial Offering (CCO)</h2>
+          <div className="crm-global-var-actions">
+            <button
+              className="crm-btn-secondary"
+              onClick={handleUpdateCco}
+              disabled={ccoUpdating}
+              title="Rebuild CCO from KB documents tagged 'type: offering'"
+            >
+              {ccoUpdating ? <Loader2 size={14} className="crm-icon-spin" /> : <Sparkles size={14} />}
+              Update from KB
+            </button>
+            <button
+              className="crm-btn-primary crm-btn-sm"
+              onClick={handleSaveCco}
+              disabled={ccoSaving}
+            >
+              {ccoSaving ? <Loader2 size={14} className="crm-icon-spin" /> : <Save size={14} />}
+              Save
+            </button>
+          </div>
+        </div>
+        {ccoMeta?.updated_at && (
+          <p className="crm-global-var-meta">
+            Last updated: {new Date(ccoMeta.updated_at).toLocaleString()} (source: {ccoMeta.source})
+          </p>
+        )}
+        <textarea
+          className="crm-global-var-textarea"
+          value={ccoText}
+          onChange={(e) => setCcoText(e.target.value)}
+          placeholder="The CCO will appear here after update or manual entry. You can edit this text freely."
+          rows={12}
+        />
       </div>
 
       {error && (

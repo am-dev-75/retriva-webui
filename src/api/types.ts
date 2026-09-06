@@ -268,3 +268,12 @@ export interface CrmJobStatus {
   error: string | null;
   warnings: string[];
 }
+
+export interface GlobalVarResponse {
+  kb_id: string;
+  var_name: string;
+  content: string;
+  updated_at: string;
+  updated_by: string | null;
+  source: string;
+}

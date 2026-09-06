@@ -37,7 +37,8 @@ import {
   ParsedAttachment,
   SessionArtifact,
   CrmJobResponse,
-  CrmJobStatus
+  CrmJobStatus,
+  GlobalVarResponse
 } from './types';
 
 interface DocumentListResponse {
@@ -497,6 +498,43 @@ class GatewayClient {
 
   async crmHealth(): Promise<{ status: string; extension?: string }> {
     return this.request<{ status: string; extension?: string }>('/api/v2/crm/health');
+  }
+
+  // --- ICP / CCO global variable text ---
+  async crmGetIcpText(kbId: string): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(`/api/v2/crm/icp/${kbId}/text`);
+  }
+
+  async crmSaveIcpText(kbId: string, content: string): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(`/api/v2/crm/icp/${kbId}/text`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async crmUpdateIcp(kbId: string): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(`/api/v2/crm/icp/${kbId}/update`, {
+      method: 'POST',
+    });
+  }
+
+  async crmGetCcoText(kbId: string): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(`/api/v2/crm/cco/${kbId}/text`);
+  }
+
+  async crmSaveCcoText(kbId: string, content: string): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(`/api/v2/crm/cco/${kbId}/text`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async crmUpdateCco(kbId: string): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(`/api/v2/crm/cco/${kbId}/update`, {
+      method: 'POST',
+    });
   }
 }
 
