@@ -255,8 +255,13 @@
     "value_placeholder": "Value",
     "presets_list": {
       "project": "Project Info",
-      "confidentiality": "Confidentiality"
-    }
+      "confidentiality": "Confidentiality",
+      "potential_customer": "Sales: Potential Customer",
+      "offering": "Sales: Offering"
+    },
+    "save_as_preset": "Save current as preset",
+    "delete_preset": "Delete preset",
+    "preset_name_prompt": "Enter a name for this preset:"
   },
   "settings": {
     "title": "Settings",

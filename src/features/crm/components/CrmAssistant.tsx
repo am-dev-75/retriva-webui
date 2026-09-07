@@ -301,7 +301,7 @@ export const CrmAssistant: React.FC = () => {
               className="crm-btn-secondary"
               onClick={handleUpdateIcp}
               disabled={icpUpdating}
-              title="Rebuild ICP from KB documents tagged 'type: potential_customer'"
+              title="Rebuild ICP from KB documents tagged 'type: dept_sales_potential_customer'"
             >
               {icpUpdating ? <Loader2 size={14} className="crm-icon-spin" /> : <Sparkles size={14} />}
               Update from KB
@@ -339,7 +339,7 @@ export const CrmAssistant: React.FC = () => {
               className="crm-btn-secondary"
               onClick={handleUpdateCco}
               disabled={ccoUpdating}
-              title="Rebuild CCO from KB documents tagged 'type: offering'"
+              title="Rebuild CCO from KB documents tagged 'type: dept_sales_offering'"
             >
               {ccoUpdating ? <Loader2 size={14} className="crm-icon-spin" /> : <Sparkles size={14} />}
               Update from KB

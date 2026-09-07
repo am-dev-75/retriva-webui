@@ -14,14 +14,36 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Tag, Bookmark } from 'lucide-react';
+import { Plus, Trash2, Tag, Bookmark, Star, Save } from 'lucide-react';
 import './Metadata.css';
 
 export interface MetadataField {
   key: string;
   value: string;
+}
+
+export interface MetadataPreset {
+  label: string;
+  fields: MetadataField[];
+  predefined?: boolean;
+}
+
+const CUSTOM_PRESETS_KEY = 'retriva_custom_metadata_presets';
+
+function loadCustomPresets(): MetadataPreset[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_PRESETS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomPresets(presets: MetadataPreset[]) {
+  localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(presets));
 }
 
 interface MetadataEditorProps {
@@ -31,10 +53,17 @@ interface MetadataEditorProps {
 
 export const MetadataEditor: React.FC<MetadataEditorProps> = ({ metadata, onChange }) => {
   const { t } = useTranslation();
+  const [customPresets, setCustomPresets] = useState<MetadataPreset[]>([]);
 
-  const presets = [
-    { label: t('metadata.presets_list.project'), fields: [{ key: 'project', value: '' }, { key: 'department', value: '' }] },
-    { label: t('metadata.presets_list.confidentiality'), fields: [{ key: 'classification', value: 'internal' }] },
+  useEffect(() => {
+    setCustomPresets(loadCustomPresets());
+  }, []);
+
+  const predefinedPresets: MetadataPreset[] = [
+    { label: t('metadata.presets_list.project'), fields: [{ key: 'project', value: '' }, { key: 'department', value: '' }], predefined: true },
+    { label: t('metadata.presets_list.confidentiality'), fields: [{ key: 'classification', value: 'internal' }], predefined: true },
+    { label: t('metadata.presets_list.potential_customer'), fields: [{ key: 'type', value: 'dept_sales_potential_customer' }], predefined: true },
+    { label: t('metadata.presets_list.offering'), fields: [{ key: 'type', value: 'dept_sales_offering' }], predefined: true },
   ];
 
   const addField = () => {
@@ -55,6 +84,23 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ metadata, onChan
     onChange([...metadata, ...presetFields]);
   };
 
+  const saveCurrentAsPreset = () => {
+    const validFields = metadata.filter((f) => f.key.trim());
+    if (validFields.length === 0) return;
+    const label = window.prompt(t('metadata.preset_name_prompt'), '');
+    if (!label || !label.trim()) return;
+    const newPreset: MetadataPreset = { label: label.trim(), fields: validFields.map((f) => ({ key: f.key, value: f.value })) };
+    const updated = [...customPresets, newPreset];
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
+  };
+
+  const deleteCustomPreset = (label: string) => {
+    const updated = customPresets.filter((p) => p.label !== label);
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
+  };
+
   return (
     <div className="metadata-editor">
       <div className="metadata-header">
@@ -68,11 +114,28 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ metadata, onChan
             {t('metadata.presets')}
           </button>
           <div className="presets-menu">
-            {presets.map((p) => (
-              <button key={p.label} onClick={() => applyPreset(p.fields)}>
+            {predefinedPresets.map((p) => (
+              <button key={p.label} onClick={() => applyPreset(p.fields)} className="preset-item predefined">
+                <Star size={12} />
                 {p.label}
               </button>
             ))}
+            {customPresets.length > 0 && <div className="presets-divider" />}
+            {customPresets.map((p) => (
+              <div key={p.label} className="preset-item-row">
+                <button onClick={() => applyPreset(p.fields)} className="preset-item custom">
+                  {p.label}
+                </button>
+                <button className="preset-delete-btn" onClick={() => deleteCustomPreset(p.label)} title={t('metadata.delete_preset')}>
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+            <div className="presets-divider" />
+            <button onClick={saveCurrentAsPreset} className="preset-item save-preset">
+              <Save size={12} />
+              {t('metadata.save_as_preset')}
+            </button>
           </div>
         </div>
       </div>
