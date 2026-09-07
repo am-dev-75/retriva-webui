@@ -29,8 +29,43 @@
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  transition: transform var(--transition-base), background-color var(--transition-base);
+  transition: width var(--transition-base), background-color var(--transition-base);
   z-index: 100;
+  overflow: hidden;
+}
+
+.app-sidebar.collapsed {
+  width: 56px;
+}
+
+.app-sidebar.collapsed .sidebar-header {
+  justify-content: center;
+}
+
+.app-sidebar.collapsed .app-logo {
+  justify-content: center;
+}
+
+.app-sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: var(--spacing-sm) var(--spacing-xs);
+}
+
+.app-sidebar.collapsed .nav-separator {
+  margin: var(--spacing-sm) var(--spacing-xs);
+}
+
+.app-sidebar.collapsed .sidebar-toggle-btn {
+  justify-content: center;
+  padding: var(--spacing-sm) var(--spacing-xs);
+}
+
+.app-sidebar.collapsed .sidebar-footer {
+  padding: var(--spacing-sm) var(--spacing-xs);
+}
+
+.app-sidebar.collapsed .mobile-close {
+  display: none;
 }
 
 .sidebar-header {
@@ -142,25 +177,6 @@
 }
 
 .sidebar-toggle-btn:hover {
-  background-color: var(--color-surface-muted);
-  color: var(--color-text);
-}
-
-.sidebar-show-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-sm);
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  margin-right: var(--spacing-md);
-}
-
-.sidebar-show-btn:hover {
   background-color: var(--color-surface-muted);
   color: var(--color-text);
 }

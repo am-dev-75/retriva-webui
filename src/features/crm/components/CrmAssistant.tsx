@@ -15,8 +15,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Upload, FileText, Download, Play, Loader2, CheckCircle2, AlertCircle, XCircle, RefreshCw, Save, Sparkles } from 'lucide-react';
+import { FileText, Download, Play, Loader2, CheckCircle2, AlertCircle, XCircle, RefreshCw, Save, Sparkles } from 'lucide-react';
 import { gatewayClient } from '../../../api/gateway-client';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
 import type { SessionAttachment, SessionArtifact, CrmJobStatus, GlobalVarResponse } from '../../../api/types';
@@ -29,7 +28,6 @@ function generateSessionId(): string {
 }
 
 export const CrmAssistant: React.FC = () => {
-  const { t } = useTranslation();
   const { selectedKbIds } = useKnowledgeBase();
   const [sessionId, setSessionId] = useState(() => {
     return sessionStorage.getItem(SESSION_ID_KEY) || generateSessionId();

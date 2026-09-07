@@ -110,12 +110,11 @@ export const AppShell: React.FC = () => {
 
   return (
     <div className="app-shell">
-      {!sidebarHidden && (
-        <aside className={`app-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+      <aside className={`app-sidebar ${sidebarHidden ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
           <div className="sidebar-header">
             <div className="app-logo">
               <img src="/logo.jpg" alt="Retriva Logo" className="logo-img" />
-              <span className="logo-text">{CONFIG.APP_NAME}</span>
+              {!sidebarHidden && <span className="logo-text">{CONFIG.APP_NAME}</span>}
             </div>
             <button className="mobile-close" onClick={() => setIsMobileMenuOpen(false)}>
               <X size={20} />
@@ -129,15 +128,16 @@ export const AppShell: React.FC = () => {
                 to={item.path} 
                 className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 onClick={() => setIsMobileMenuOpen(false)}
+                title={item.label}
               >
                 <item.icon size={20} />
-                <span className="nav-label">{item.label}</span>
+                {!sidebarHidden && <span className="nav-label">{item.label}</span>}
               </NavLink>
             ))}
 
             {/* Separator + Pro extensions */}
             <div className="nav-separator" />
-            <div className="nav-section-label">Retriva Pro</div>
+            {!sidebarHidden && <div className="nav-section-label">Retriva Pro</div>}
             {PRO_EXTENSIONS.map((ext) => {
               const isHealthy = proHealth[ext.healthKey] ?? false;
               return (
@@ -150,10 +150,11 @@ export const AppShell: React.FC = () => {
                     setIsMobileMenuOpen(false);
                   }}
                   style={!isHealthy ? { pointerEvents: 'none', opacity: 0.4 } : undefined}
+                  title={ext.label}
                 >
                   <ext.icon size={20} />
-                  <span className="nav-label">{ext.label}</span>
-                  {!isHealthy && <span className="nav-disabled-badge">off</span>}
+                  {!sidebarHidden && <span className="nav-label">{ext.label}</span>}
+                  {!isHealthy && !sidebarHidden && <span className="nav-disabled-badge">off</span>}
                 </NavLink>
               );
             })}
@@ -162,35 +163,29 @@ export const AppShell: React.FC = () => {
           <div className="sidebar-footer">
             <button
               className="sidebar-toggle-btn"
-              onClick={() => setSidebarHidden(true)}
-              title="Hide sidebar"
+              onClick={() => setSidebarHidden(!sidebarHidden)}
+              title={sidebarHidden ? 'Show sidebar' : 'Hide sidebar'}
             >
-              <PanelLeftClose size={18} />
-              <span className="nav-label">Hide</span>
+              {sidebarHidden ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+              {!sidebarHidden && <span className="nav-label">Hide</span>}
             </button>
-            <div className="theme-indicator">
-              <span className="theme-dot" style={{ backgroundColor: resolvedTheme === 'dark' ? '#3b82f6' : '#2563eb' }}></span>
-              <span className="theme-label">{theme.charAt(0).toUpperCase() + theme.slice(1)} Mode</span>
-            </div>
-            <div className="app-version">
-              v{CONFIG.APP_VERSION}
-            </div>
+            {!sidebarHidden && (
+              <>
+                <div className="theme-indicator">
+                  <span className="theme-dot" style={{ backgroundColor: resolvedTheme === 'dark' ? '#3b82f6' : '#2563eb' }}></span>
+                  <span className="theme-label">{theme.charAt(0).toUpperCase() + theme.slice(1)} Mode</span>
+                </div>
+                <div className="app-version">
+                  v{CONFIG.APP_VERSION}
+                </div>
+              </>
+            )}
           </div>
-        </aside>
-      )}
+      </aside>
 
       <main className="app-main">
         <header className="main-header">
           <div className="header-content-wrapper">
-            {sidebarHidden && (
-              <button
-                className="sidebar-show-btn"
-                onClick={() => setSidebarHidden(false)}
-                title="Show sidebar"
-              >
-                <PanelLeftOpen size={20} />
-              </button>
-            )}
             <button className="mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(true)}>
               <Menu size={24} />
             </button>
