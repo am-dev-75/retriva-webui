@@ -74,7 +74,7 @@ const getUserProvidedTags = (doc: DocumentView): string[] => {
   const userMetadata = metadata.user_metadata as { tags?: unknown } | undefined;
 
   // All fields in metadata except system-internal ones
-  const systemKeys = ['kb_id', 'user_provided', 'user_provided_tags', 'user_metadata', 'ingestion_status', 'created_at', 'ingestion_timestamp'];
+  const systemKeys = ['kb_ids', 'user_provided', 'user_provided_tags', 'user_metadata', 'ingestion_status', 'created_at', 'ingestion_timestamp'];
 
   const autoTags = Object.entries(metadata)
     .filter(([key]) => !systemKeys.includes(key))
@@ -93,7 +93,7 @@ const getMetadataTags = (doc: DocumentView): string[] => {
   if (!doc.metadata) return [];
 
   // System tags only
-  const systemKeys = ['kb_id'];
+  const systemKeys = ['kb_ids'];
 
   return Object.entries(doc.metadata)
     .filter(([key, value]) => {
@@ -455,7 +455,7 @@ export const DocumentList: React.FC = () => {
                         <span>{getDocumentDisplayName(doc)}</span>
                       </div>
                     </td>
-                    <td>{doc.kb_id}</td>
+                    <td>{doc.kb_ids?.join(', ') || 'default'}</td>
                     <td>{formatFileSize(doc.size)}</td>
                     <td className="tags-cell">
                       <div className="tags-cell-content">

@@ -95,7 +95,23 @@ class GatewayClient {
     }
 
     if (!response.ok) {
-      throw new Error(`Gateway Error: ${response.statusText}`);
+      // Surface the backend's detail message when available so users see
+      // *why* a request failed (e.g. "No reference organizations found for
+      // KB 'default'") instead of a bare status text.
+      let detail = '';
+      try {
+        const body = await response.clone().json();
+        detail =
+          body?.detail ??
+          body?.error?.message ??
+          body?.message ??
+          '';
+        if (typeof detail !== 'string') detail = JSON.stringify(detail);
+      } catch {
+        // body was not JSON — fall through to status text only
+      }
+      const suffix = detail ? `: ${detail}` : '';
+      throw new Error(`Gateway Error: ${response.statusText}${suffix}`);
     }
 
     if (response.status === 204) {

@@ -60,7 +60,7 @@ export interface IngestionBatch {
 
 export interface Document {
   id: string;
-  kb_id: string;
+  kb_ids: string[];
   filename: string;
   page_title?: string;
   source_path?: string;

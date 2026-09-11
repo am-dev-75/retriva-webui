@@ -117,9 +117,7 @@ export const UploadPanel: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    // For ingestion, we use the primary (first) selected KB
-    const targetKbId = selectedKbIds[0] || 'default';
-    console.log(`Ingesting files to Knowledge Base: ${targetKbId}`);
+    console.log(`Ingesting files to Knowledge Bases: ${selectedKbIds.join(', ')}`);
     
     if (pendingFiles.length === 0) return;
 
@@ -128,8 +126,12 @@ export const UploadPanel: React.FC = () => {
     );
 
     try {
-      // 1. Convert metadata to a Record
-      const metadataObj: Record<string, string> = { kb_id: targetKbId };
+      // 1. Convert metadata to a Record — KB membership is expressed as
+      //    a list of KB IDs inside user_metadata.kb_ids so that a chunk can
+      //    belong to multiple KBs.
+      const metadataObj: Record<string, string | string[]> = {
+        kb_ids: [...selectedKbIds],
+      };
       globalMetadata.forEach(m => {
         if (m.key && m.value) metadataObj[m.key] = m.value;
       });
