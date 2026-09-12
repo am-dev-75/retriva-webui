@@ -127,7 +127,11 @@ class GatewayClient {
     message: string, 
     metadataFilters?: MetadataFilter[], 
     metadataFilterMode?: MetadataFilterMode,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    // Agent mode (optional): when a chat session with candidate attachments
+    // is active, pass session/attachment context so the Gateway can run the
+    // bounded tool-calling agent loop. Plain chat otherwise.
+    agentContext?: { sessionId: string; attachmentIds?: string[] }
   ): Promise<Message> {
     const authHeaders = await this._authHeaders();
     const response = await fetch(`${this.baseUrl}/gateway/chat`, {
@@ -137,7 +141,12 @@ class GatewayClient {
         kb_ids: kbIds, 
         message,
         metadata_filters: metadataFilters,
-        metadata_filter_mode: metadataFilterMode
+        metadata_filter_mode: metadataFilterMode,
+        ...(agentContext ? {
+          session_id: agentContext.sessionId,
+          tools_enabled: true,
+          attachment_ids: agentContext.attachmentIds ?? [],
+        } : {}),
       }),
       signal,
     });
