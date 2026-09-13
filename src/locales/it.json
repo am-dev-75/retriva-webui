@@ -41,7 +41,15 @@
     "filters": "Filtri metadati",
     "title": "Chat",
     "subtitle": "Interagisci con le tue knowledge base usando il linguaggio naturale.",
-    "disclaimer": "I contenuti generati dall'IA potrebbero non essere corretti."
+    "disclaimer": "I contenuti generati dall'IA potrebbero non essere corretti.",
+    "candidate_uploaded": "Lista candidati '{filename}' allegata a questa chat ({id}). Chiedimi di qualificare questi prospect oppure usa il pulsante Qualifica.",
+    "candidate_qualify": "Qualifica candidati",
+    "candidate_starting": "Avvio…",
+    "candidate_session": "Sessione",
+    "candidate_job_state": "Qualifica",
+    "candidate_job_done": "Qualifica terminata: {state}. Candidati: {candidates}, risultati: {results}.",
+    "candidate_remove": "Rimuovi lista candidati",
+    "candidate_qualification_started": "Job di qualifica {job} avviato sulla knowledge base '{kb}'. Lo monitoro — puoi chiedere lo stato in qualsiasi momento."
   },
   "kb": {
     "title": "Knowledge Base",

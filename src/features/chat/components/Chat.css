@@ -571,3 +571,89 @@
   margin-top: var(--spacing-sm);
   padding: 0;
 }
+
+/* --- Candidate-list (prospect qualification) panel --- */
+.candidate-panel {
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.06);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.candidate-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary, #e5e7eb);
+}
+
+.candidate-panel-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidate-panel-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+  display: flex;
+  padding: 2px;
+}
+
+.candidate-panel-close:hover {
+  color: var(--text-primary, #e5e7eb);
+}
+
+.candidate-panel-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.candidate-panel-id {
+  color: var(--text-secondary, #9ca3af);
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.candidate-panel-status {
+  color: var(--text-secondary, #9ca3af);
+}
+
+.candidate-panel-qualify {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.candidate-panel-qualify:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.candidate-panel-qualify:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.composer-action .spin {
+  animation: candidate-spin 1s linear infinite;
+}
+
+@keyframes candidate-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

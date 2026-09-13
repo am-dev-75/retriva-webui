@@ -16,8 +16,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Square, User, Bot, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter, Mic } from 'lucide-react';
-import { Message, Citation } from '../../../api/types';
+import { Send, Square, User, Bot, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter, Mic, Paperclip, FileText, Loader2, X } from 'lucide-react';
+import { Message, Citation, SessionAttachment } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
 import { CONFIG } from '../../../app/config';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
@@ -46,6 +46,18 @@ export const ChatContainer: React.FC = () => {
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- Candidate-list qualification state (agent mode) ---
+  // A chat session is created lazily when the first candidate list is
+  // uploaded; from then on chat messages run through the gateway's
+  // bounded tool-calling agent loop for this session.
+  const [candidateSessionId, setCandidateSessionId] = useState<string | null>(null);
+  const [candidateAttachment, setCandidateAttachment] = useState<SessionAttachment | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isStartingQualification, setIsStartingQualification] = useState(false);
+  const [candidateJobId, setCandidateJobId] = useState<string | null>(null);
+  const [candidateJobState, setCandidateJobState] = useState<string | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -77,7 +89,12 @@ export const ChatContainer: React.FC = () => {
         userMessage.content, 
         activeFilters.length > 0 ? activeFilters : undefined,
         filterMode,
-        controller.signal
+        controller.signal,
+        // Agent mode: active when a candidate session exists. The gateway
+        // runs the bounded tool-calling agent loop for this session.
+        candidateSessionId && candidateAttachment
+          ? { sessionId: candidateSessionId, attachmentIds: [candidateAttachment.attachment_id] }
+          : undefined
       );
       setMessages(prev => [...prev, { ...response, feedback: null }]);
     } catch (error: unknown) {
@@ -122,6 +139,113 @@ export const ChatContainer: React.FC = () => {
       abortControllerRef.current.abort();
     }
   }, []);
+
+  // --- Candidate-list upload + qualification ---
+
+  const addSystemMessage = (content: string) => {
+    setMessages(prev => [...prev, {
+      id: (Date.now() + Math.random()).toString(),
+      role: 'assistant',
+      content,
+      timestamp: new Date().toISOString(),
+      feedback: null,
+    }]);
+  };
+
+  const handleCandidateFileSelected = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = ''; // allow re-selecting the same file
+    if (!file || isUploading) return;
+
+    setIsUploading(true);
+    try {
+      // Sessions are implicit: the client generates the session ID and the
+      // first attachment upload creates it server-side (same convention as
+      // the CRM acceptance flow).
+      const sessionId = candidateSessionId ?? crypto.randomUUID();
+      if (!candidateSessionId) setCandidateSessionId(sessionId);
+
+      const attachment = await gatewayClient.uploadSessionAttachment(sessionId, file);
+      setCandidateAttachment(attachment);
+      addSystemMessage(
+        t('chat.candidate_uploaded', {
+          filename: attachment.original_filename,
+          id: attachment.attachment_id.slice(0, 8),
+        })
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Upload failed';
+      addSystemMessage(`Error: ${message}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleStartQualification = async () => {
+    if (!candidateSessionId || !candidateAttachment || isStartingQualification) return;
+    const kbId = selectedKbIds[0] || 'default';
+    setIsStartingQualification(true);
+    try {
+      const job = await gatewayClient.crmQualify(
+        candidateSessionId,
+        candidateAttachment.attachment_id,
+        kbId
+      );
+      setCandidateJobId(job.job_id);
+      setCandidateJobState('created');
+      addSystemMessage(
+        t('chat.candidate_qualification_started', { job: job.job_id.slice(0, 12), kb: kbId })
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not start qualification';
+      addSystemMessage(`Error: ${message}`);
+    } finally {
+      setIsStartingQualification(false);
+    }
+  };
+
+  const handleRemoveCandidateList = () => {
+    setCandidateAttachment(null);
+    setCandidateJobId(null);
+    setCandidateJobState(null);
+  };
+
+  // Poll the qualification job while it is active.
+  useEffect(() => {
+    if (!candidateJobId) return;
+    const state = candidateJobState?.toUpperCase() ?? '';
+    if (
+      state.startsWith('COMPLETED') || state === 'FAILED' ||
+      state === 'CANCELLED' || state === 'EXPIRED'
+    ) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const job = await gatewayClient.crmGetJob(candidateJobId);
+        setCandidateJobState(job.state);
+        if (
+          job.state.startsWith('COMPLETED') || job.state === 'FAILED' ||
+          job.state === 'CANCELLED'
+        ) {
+          const lines = [
+            t('chat.candidate_job_done', {
+              state: job.state,
+              candidates: job.candidate_count,
+              results: job.result_count,
+            }),
+            job.warnings?.length ? `Warnings: ${job.warnings.join(' | ')}` : '',
+            job.error ? `Error: ${job.error}` : '',
+          ].filter(Boolean);
+          addSystemMessage(lines.join('\n'));
+        }
+      } catch {
+        // transient errors: keep polling
+      }
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [candidateJobId, candidateJobState]);
 
   const handleRepeatLast = useCallback(() => {
     // Find the last user message
@@ -318,6 +442,43 @@ ${cite.source_url ? `<p><a href="${cite.source_url}" target="_blank" rel="noopen
 
 
       <div className="chat-input-area">
+        {candidateAttachment && (
+          <div className="candidate-panel">
+            <div className="candidate-panel-header">
+              <FileText size={16} />
+              <span className="candidate-panel-title">
+                {candidateAttachment.original_filename}
+              </span>
+              <button
+                className="candidate-panel-close"
+                onClick={handleRemoveCandidateList}
+                title={t('chat.candidate_remove')}
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="candidate-panel-body">
+              <span className="candidate-panel-id">
+                {t('chat.candidate_session')}: {candidateSessionId?.slice(0, 12)}…
+              </span>
+              {candidateJobId ? (
+                <span className="candidate-panel-status">
+                  {t('chat.candidate_job_state')}: {candidateJobState ?? '…'}
+                </span>
+              ) : (
+                <button
+                  className="candidate-panel-qualify"
+                  onClick={handleStartQualification}
+                  disabled={isStartingQualification}
+                >
+                  {isStartingQualification
+                    ? t('chat.candidate_starting')
+                    : t('chat.candidate_qualify')}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         <div className="composer-container">
           <button 
             className={`composer-action ${showFilters ? 'active' : ''}`} 
@@ -326,12 +487,22 @@ ${cite.source_url ? `<p><a href="${cite.source_url}" target="_blank" rel="noopen
           >
             <Filter size={20} />
           </button>
-          {/*
-          <button className="composer-action" title={t('chat.attachment')}>
-            <Paperclip size={20} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.md,.csv,.xlsx,.pdf"
+            style={{ display: 'none' }}
+            onChange={handleCandidateFileSelected}
+          />
+          <button 
+            className={`composer-action ${candidateAttachment ? 'active' : ''}`}
+            title={t('chat.attachment')}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? <Loader2 size={20} className="spin" /> : <Paperclip size={20} />}
           </button>
-          */}
-          
+
           <textarea
             className="composer-textarea"
             placeholder={t('chat.placeholder')}
