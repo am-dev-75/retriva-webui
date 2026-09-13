@@ -250,7 +250,9 @@
   "artifacts": {
     "title": "Artefatti",
     "subtitle": "Visualizza e scarica i tuoi report e le tue estrazioni.",
-    "empty_state": "Nessun artefatto trovato"
+    "empty_state": "Nessun artefatto trovato",
+    "refresh": "Aggiorna",
+    "download": "Scarica"
   },
   "metadata": {
     "title": "Metadati",

@@ -14,29 +14,80 @@
  * limitations under the License.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, FileText, Trash2, Clock, CheckCircle, AlertCircle } from 'lucide-react';
-import { Artifact } from '../../../api/types';
+import { Download, FileText, Clock, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { SessionArtifact } from '../../../api/types';
+import { gatewayClient } from '../../../api/gateway-client';
 import { formatDate } from '../../../lib/formatting';
 import './Artifacts.css';
 
+/**
+ * Real artifact browser: lists every session artifact (qualification
+ * reports, extractions, ...) across all sessions, most recent first, and
+ * downloads them via the authenticated artifact content endpoint.
+ */
 export const ArtifactList: React.FC = () => {
   const { t } = useTranslation();
-  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+  const [artifacts, setArtifacts] = useState<SessionArtifact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const list = await gatewayClient.listAllSessionArtifacts();
+      setArtifacts(list);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load artifacts');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // Mocking
-    setTimeout(() => {
-      setArtifacts([
-        { id: '1', name: 'Annual Report Summary', type: 'pdf', status: 'completed', created_at: new Date().toISOString() },
-        { id: '2', name: 'Project Timeline', type: 'markdown', status: 'completed', created_at: new Date().toISOString() },
-        { id: '3', name: 'Raw Extraction', type: 'docx', status: 'pending', created_at: new Date().toISOString() },
-      ]);
-      setIsLoading(false);
-    }, 500);
-  }, []);
+    load();
+  }, [load]);
+
+  const handleDownload = async (art: SessionArtifact) => {
+    setDownloadingId(art.artifact_id);
+    try {
+      const blob = await gatewayClient.downloadSessionArtifact(
+        art.session_id,
+        art.artifact_id
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = art.filename || art.artifact_id;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Download failed');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const typeLabel = (art: SessionArtifact) => {
+    const mt = (art.media_type || '').toLowerCase();
+    if (mt.includes('sheet') || art.filename?.endsWith('.xlsx')) return 'xlsx';
+    if (mt.includes('markdown') || art.filename?.endsWith('.md')) return 'markdown';
+    if (mt.includes('pdf')) return 'pdf';
+    if (mt.includes('html')) return 'html';
+    return mt.split('/')[1] || 'file';
+  };
+
+  const statusIcon = (art: SessionArtifact) => {
+    if (art.status === 'ready') return <CheckCircle size={18} className="text-success" />;
+    if (art.status === 'pending' || art.status === 'processing')
+      return <Clock size={18} className="text-warning" />;
+    return <AlertCircle size={18} className="text-danger" />;
+  };
 
   return (
     <div className="artifacts-container">
@@ -45,7 +96,17 @@ export const ArtifactList: React.FC = () => {
           <h1>{t('artifacts.title')}</h1>
           <p className="page-subtitle">{t('artifacts.subtitle')}</p>
         </div>
+        <button
+          className="btn btn-ghost btn-icon"
+          onClick={load}
+          disabled={isLoading}
+          title={t('artifacts.refresh')}
+        >
+          <RefreshCw size={18} className={isLoading ? 'spin' : ''} />
+        </button>
       </header>
+
+      {error && <div className="artifacts-error">{error}</div>}
 
       <div className="artifacts-grid">
         {isLoading ? (
@@ -54,37 +115,35 @@ export const ArtifactList: React.FC = () => {
           <div className="empty-state">{t('artifacts.empty_state')}</div>
         ) : (
           artifacts.map((art) => (
-            <div key={art.id} className="artifact-card">
+            <div key={art.artifact_id} className="artifact-card">
               <div className="artifact-icon">
                 <FileText size={24} />
               </div>
               <div className="artifact-info">
-                <h3>{art.name}</h3>
+                <h3>{art.filename}</h3>
                 <div className="artifact-meta">
-                  <span className="artifact-type">{art.type.toUpperCase()}</span>
+                  <span className="artifact-type">{typeLabel(art).toUpperCase()}</span>
                   <span className="dot">•</span>
                   <span className="artifact-date">{formatDate(art.created_at)}</span>
+                  {art.artifact_kind && (
+                    <>
+                      <span className="dot">•</span>
+                      <span className="artifact-kind">{art.artifact_kind}</span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="artifact-status">
-                {art.status === 'completed' ? (
-                  <CheckCircle size={18} className="text-success" />
-                ) : art.status === 'pending' ? (
-                  <Clock size={18} className="text-warning" />
-                ) : (
-                  <AlertCircle size={18} className="text-danger" />
-                )}
+                {statusIcon(art)}
               </div>
               <div className="artifact-actions">
-                <button 
-                  className="btn btn-ghost btn-icon" 
-                  disabled={art.status !== 'completed'}
-                  title="Download"
+                <button
+                  className="btn btn-ghost btn-icon"
+                  onClick={() => handleDownload(art)}
+                  disabled={art.status !== 'ready' || downloadingId === art.artifact_id}
+                  title={t('artifacts.download')}
                 >
                   <Download size={18} />
-                </button>
-                <button className="btn btn-ghost btn-icon danger" title="Delete">
-                  <Trash2 size={18} />
                 </button>
               </div>
             </div>

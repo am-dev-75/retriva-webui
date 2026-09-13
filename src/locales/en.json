@@ -250,7 +250,9 @@
   "artifacts": {
     "title": "Artifacts",
     "subtitle": "View and download your generated reports and extractions.",
-    "empty_state": "No artifacts found"
+    "empty_state": "No artifacts found",
+    "refresh": "Refresh",
+    "download": "Download"
   },
   "metadata": {
     "title": "Metadata",

@@ -487,6 +487,11 @@ class GatewayClient {
     return this.request<SessionArtifact[]>(`/api/v2/sessions/${sessionId}/artifacts`);
   }
 
+  /** Artifact index across ALL sessions (most recent first). */
+  async listAllSessionArtifacts(): Promise<SessionArtifact[]> {
+    return this.request<SessionArtifact[]>('/api/v2/sessions/artifacts');
+  }
+
   async downloadSessionArtifact(sessionId: string, artifactId: string): Promise<Blob> {
     const authHeaders = await this._authHeaders();
     const response = await fetch(`${this.baseUrl}/api/v2/sessions/${sessionId}/artifacts/${artifactId}/content`, {
