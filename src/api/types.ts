@@ -260,8 +260,12 @@ export interface CrmJobStatus {
   candidate_count: number;
   result_count: number;
   artifact_ids: string[];
-  icp_id: string | null;
-  icp_version: number | null;
+  acp_id: string | null;
+  acp_version: number | null;
+  /** @deprecated ICP alias (compatibility period); mirrors acp_id. */
+  icp_id?: string | null;
+  /** @deprecated ICP alias (compatibility period); mirrors acp_version. */
+  icp_version?: number | null;
   portfolio_id: string | null;
   portfolio_version: number | null;
   analysis_mode: string | null;

@@ -522,29 +522,31 @@ class GatewayClient {
     return this.request<unknown>(`/api/v2/crm/portfolio/${kbId}`);
   }
 
-  async crmGetIcp(kbId: string): Promise<unknown[]> {
-    return this.request<unknown[]>(`/api/v2/crm/icp/${kbId}`);
+  /** Build and return the current ACP family.  Deprecated /icp/ path
+   *  is kept as a server-side alias. */
+  async crmGetAcp(kbId: string): Promise<unknown[]> {
+    return this.request<unknown[]>(`/api/v2/crm/acp/${kbId}`);
   }
 
   async crmHealth(): Promise<{ status: string; extension?: string }> {
     return this.request<{ status: string; extension?: string }>('/api/v2/crm/health');
   }
 
-  // --- ICP / CCO global variable text ---
-  async crmGetIcpText(kbId: string): Promise<GlobalVarResponse> {
-    return this.request<GlobalVarResponse>(`/api/v2/crm/icp/${kbId}/text`);
+  // --- ACP / CCO global variable text ---
+  async crmGetAcpText(kbId: string): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(`/api/v2/crm/acp/${kbId}/text`);
   }
 
-  async crmSaveIcpText(kbId: string, content: string): Promise<GlobalVarResponse> {
-    return this.request<GlobalVarResponse>(`/api/v2/crm/icp/${kbId}/text`, {
+  async crmSaveAcpText(kbId: string, content: string): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(`/api/v2/crm/acp/${kbId}/text`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
     });
   }
 
-  async crmUpdateIcp(kbId: string): Promise<GlobalVarResponse> {
-    return this.request<GlobalVarResponse>(`/api/v2/crm/icp/${kbId}/update`, {
+  async crmUpdateAcp(kbId: string): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(`/api/v2/crm/acp/${kbId}/update`, {
       method: 'POST',
     });
   }
