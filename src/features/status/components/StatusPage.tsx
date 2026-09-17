@@ -64,9 +64,11 @@ const formatTime = (iso: string) => {
 };
 
 const getProgressPct = (job: JobSummary): number | null => {
+  // Terminal states override the raw progress value so a job that failed
+  // mid-run never renders as a bar frozen at e.g. 60%.
+  if (job.status === 'failed' || job.status === 'cancelled') return job.progress ?? 0;
   if (job.progress !== null && job.progress !== undefined) return job.progress;
   if (job.status === 'completed') return 100;
-  if (job.status === 'failed' || job.status === 'cancelled') return 0;
   return null;
 };
 
@@ -362,7 +364,12 @@ export const StatusPage: React.FC = () => {
                                 <div className="pipeline-tracker">
                                   {PIPELINE_STAGES.map((stage, idx) => {
                                     const isDone = job.stages_completed.includes(stage);
-                                    const isCurrent = job.current_stage === stage;
+                                    const isTerminal =
+                                      job.status === 'completed' ||
+                                      job.status === 'failed' ||
+                                      job.status === 'cancelled';
+                                    const isCurrent =
+                                      !isTerminal && job.current_stage === stage;
                                     return (
                                       <React.Fragment key={stage}>
                                         {idx > 0 && (

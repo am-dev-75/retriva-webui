@@ -58,6 +58,8 @@ export const ChatContainer: React.FC = () => {
   const [isStartingQualification, setIsStartingQualification] = useState(false);
   const [candidateJobId, setCandidateJobId] = useState<string | null>(null);
   const [candidateJobState, setCandidateJobState] = useState<string | null>(null);
+  const [candidateJobError, setCandidateJobError] = useState<string | null>(null);
+  const candidatePollFailuresRef = useRef(0);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -210,6 +212,8 @@ export const ChatContainer: React.FC = () => {
     setCandidateAttachment(null);
     setCandidateJobId(null);
     setCandidateJobState(null);
+    setCandidateJobError(null);
+    candidatePollFailuresRef.current = 0;
   };
 
   // Poll the qualification job while it is active.
@@ -224,10 +228,12 @@ export const ChatContainer: React.FC = () => {
     const timer = setTimeout(async () => {
       try {
         const job = await gatewayClient.crmGetJob(candidateJobId);
+        candidatePollFailuresRef.current = 0;
         setCandidateJobState(job.state);
+        setCandidateJobError(job.error ?? null);
         if (
           job.state.startsWith('COMPLETED') || job.state === 'FAILED' ||
-          job.state === 'CANCELLED'
+          job.state === 'CANCELLED' || job.state === 'EXPIRED'
         ) {
           const lines = [
             t('chat.candidate_job_done', {
@@ -240,7 +246,29 @@ export const ChatContainer: React.FC = () => {
           ].filter(Boolean);
           addSystemMessage(lines.join('\n'));
         }
-      } catch {
+      } catch (error) {
+        // A 404 means the job record is gone (the CRM job registry is
+        // process-local in-memory, e.g. after a service restart). That is
+        // terminal, not transient: stop polling and surface it instead of
+        // polling forever with the panel frozen at the last state.
+        const isNotFound =
+          error instanceof Error && 'status' in error &&
+          (error as { status?: number }).status === 404;
+        if (isNotFound) {
+          setCandidateJobState('LOST');
+          addSystemMessage(
+            t('chat.candidate_job_lost', { job: candidateJobId })
+          );
+          return;
+        }
+        candidatePollFailuresRef.current += 1;
+        if (candidatePollFailuresRef.current >= 10) {
+          setCandidateJobState('LOST');
+          addSystemMessage(
+            t('chat.candidate_job_unreachable', { job: candidateJobId })
+          );
+          return;
+        }
         // transient errors: keep polling
       }
     }, 4000);
@@ -462,9 +490,29 @@ ${cite.source_url ? `<p><a href="${cite.source_url}" target="_blank" rel="noopen
                 {t('chat.candidate_session')}: {candidateSessionId?.slice(0, 12)}…
               </span>
               {candidateJobId ? (
-                <span className="candidate-panel-status">
-                  {t('chat.candidate_job_state')}: {candidateJobState ?? '…'}
-                </span>
+                <div className="candidate-panel-status">
+                  <span
+                    className={
+                      candidateJobState &&
+                      (candidateJobState.toUpperCase() === 'FAILED' ||
+                        candidateJobState.toUpperCase() === 'CANCELLED' ||
+                        candidateJobState.toUpperCase() === 'EXPIRED' ||
+                        candidateJobState.toUpperCase() === 'LOST')
+                        ? 'candidate-job-state candidate-job-state--failed'
+                        : 'candidate-job-state'
+                    }
+                  >
+                    {t('chat.candidate_job_state')}: {candidateJobState ?? '…'}
+                  </span>
+                  {candidateJobError ? (
+                    <span
+                      className="candidate-job-error"
+                      title={candidateJobError}
+                    >
+                      {candidateJobError}
+                    </span>
+                  ) : null}
+                </div>
               ) : (
                 <button
                   className="candidate-panel-qualify"

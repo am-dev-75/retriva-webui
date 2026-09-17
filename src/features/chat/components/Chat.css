@@ -627,6 +627,24 @@
 
 .candidate-panel-status {
   color: var(--text-secondary, #9ca3af);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.candidate-job-state--failed {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.candidate-job-error {
+  color: #ef4444;
+  font-size: 11px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .candidate-panel-qualify {

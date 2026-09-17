@@ -48,6 +48,8 @@
     "candidate_session": "Session",
     "candidate_job_state": "Qualification",
     "candidate_job_done": "Qualification finished: {state}. Candidates: {candidates}, results: {results}.",
+    "candidate_job_lost": "Qualification job {job} can no longer be found (the service may have restarted). Polling stopped — please start a new qualification.",
+    "candidate_job_unreachable": "Qualification job {job} status is temporarily unreachable; after repeated retries it still could not be fetched. Polling stopped — please check the service or start a new qualification.",
     "candidate_remove": "Remove candidate list",
     "candidate_qualification_started": "Qualification job {job} started against knowledge base '{kb}'. I will monitor it — you can ask for status at any time."
   },

@@ -99,7 +99,11 @@ export const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({ job, onClose }
             <div className="pipeline-tracker">
               {PIPELINE_STAGES.map((stage, idx) => {
                 const isDone = job.stages_completed.includes(stage);
-                const isCurrent = job.current_stage === stage;
+                const isTerminal =
+                  job.status === 'completed' ||
+                  job.status === 'failed' ||
+                  job.status === 'cancelled';
+                const isCurrent = !isTerminal && job.current_stage === stage;
                 return (
                   <React.Fragment key={stage}>
                     {idx > 0 && (

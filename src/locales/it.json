@@ -48,6 +48,8 @@
     "candidate_session": "Sessione",
     "candidate_job_state": "Qualifica",
     "candidate_job_done": "Qualifica terminata: {state}. Candidati: {candidates}, risultati: {results}.",
+    "candidate_job_lost": "Il job di qualifica {job} non è più reperibile (il servizio potrebbe essere stato riavviato). Monitoraggio interrotto — avvia una nuova qualifica.",
+    "candidate_job_unreachable": "Lo stato del job di qualifica {job} è temporaneamente irraggiungibile; dopo ripetuti tentativi non è stato recuperato. Monitoraggio interrotto — verifica il servizio o avvia una nuova qualifica.",
     "candidate_remove": "Rimuovi lista candidati",
     "candidate_qualification_started": "Job di qualifica {job} avviato sulla knowledge base '{kb}'. Lo monitoro — puoi chiedere lo stato in qualsiasi momento."
   },

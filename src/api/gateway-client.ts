@@ -111,7 +111,11 @@ class GatewayClient {
         // body was not JSON — fall through to status text only
       }
       const suffix = detail ? `: ${detail}` : '';
-      throw new Error(`Gateway Error: ${response.statusText}${suffix}`);
+      const err = new Error(
+        `Gateway Error: ${response.statusText}${suffix}`
+      ) as Error & { status?: number };
+      err.status = response.status;
+      throw err;
     }
 
     if (response.status === 204) {
