@@ -355,7 +355,20 @@ export const ChatContainer: React.FC = () => {
               </div>
               <div className="message-content">
                 <div className="message-text markdown-content">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      a: ({ href, children }) => (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {children}
+                        </a>
+                      ),
+                    }}
+                  >
                     {msg.content}
                   </ReactMarkdown>
                 </div>
