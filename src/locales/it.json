@@ -42,7 +42,7 @@
     "title": "Chat",
     "subtitle": "Interagisci con le tue knowledge base usando il linguaggio naturale.",
     "disclaimer": "I contenuti generati dall'IA potrebbero non essere corretti.",
-    "candidate_uploaded": "Lista candidati '{filename}' allegata a questa chat ({id}). Chiedimi di qualificare questi prospect oppure usa il pulsante Qualifica.",
+    "candidate_uploaded": "File '{filename}' allegato a questa chat ({id}). Se è una lista di candidati, chiedimi di qualificare i prospect oppure usa il pulsante Qualifica.",
     "candidate_qualify": "Qualifica candidati",
     "candidate_starting": "Avvio…",
     "candidate_session": "Sessione",

@@ -42,7 +42,7 @@
     "title": "Chat",
     "subtitle": "Interact with your knowledge bases using natural language.",
     "disclaimer": "AI-generated content may be incorrect.",
-    "candidate_uploaded": "Candidate list '{filename}' attached to this chat session ({id}). Ask me to qualify these prospects, or use the Qualify button.",
+    "candidate_uploaded": "File '{filename}' attached to this chat session ({id}). If it is a candidate list, ask me to qualify the prospects or use the Qualify button.",
     "candidate_qualify": "Qualify candidates",
     "candidate_starting": "Starting…",
     "candidate_session": "Session",
