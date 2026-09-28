@@ -44,7 +44,6 @@ export const CrmAssistant: React.FC = () => {
   const [ccoMeta, setCcoMeta] = useState<GlobalVarResponse | null>(null);
   const [acpSaving, setAcpSaving] = useState(false);
   const [ccoSaving, setCcoSaving] = useState(false);
-  const [acpUpdating, setAcpUpdating] = useState(false);
   const [ccoUpdating, setCcoUpdating] = useState(false);
 
   const kbId = selectedKbIds.length > 0 ? selectedKbIds[0] : 'default';
@@ -86,21 +85,6 @@ export const CrmAssistant: React.FC = () => {
       setAcpSaving(false);
     }
   }, [kbId, acpText]);
-
-  const handleUpdateAcp = useCallback(async () => {
-    setAcpUpdating(true);
-    setError(null);
-    try {
-      const resp = await gatewayClient.crmUpdateAcp(kbId);
-      setAcpText(resp.content || '');
-      setAcpMeta(resp);
-      setInfo('ACP updated from KB.');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update ACP from KB');
-    } finally {
-      setAcpUpdating(false);
-    }
-  }, [kbId]);
 
   const handleSaveCco = useCallback(async () => {
     setCcoSaving(true);
@@ -176,15 +160,16 @@ export const CrmAssistant: React.FC = () => {
           <div className="crm-global-var-header">
             <h2>Average Customer Profile (ACP)</h2>
             <div className="crm-global-var-actions">
-              <button
+              <a
                 className="crm-btn-secondary"
-                onClick={handleUpdateAcp}
-                disabled={acpUpdating}
-                title="Rebuild the ACP from all documents tagged 'type: dept_sales_potential_customer' (ACP reference organizations)"
+                href="/api/v2/crm/acp/cohorts/console"
+                target="_blank"
+                rel="noreferrer"
+                title="ACP versions come from approved PostgreSQL cohorts (Spec 019). Open the cohort review console to propose, review, approve, generate, and activate."
               >
-                {acpUpdating ? <Loader2 size={14} className="crm-icon-spin" /> : <Sparkles size={14} />}
-                Update from KB
-              </button>
+                <Sparkles size={14} />
+                Cohort workflow
+              </a>
               <button
                 className="crm-btn-primary crm-btn-sm"
                 onClick={handleSaveAcp}
