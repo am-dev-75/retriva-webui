@@ -91,6 +91,7 @@ describe('canonical ACP source guard', () => {
       '/start-review',
       '/approve',
       '/activate',
+      '/supersede',
     ]) {
       expect(ACP_SOURCES.gatewayClient).toContain(path);
     }

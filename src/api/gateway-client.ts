@@ -44,6 +44,8 @@ import {
   AcpDraftSummary,
   AcpDraftUpdateRequest,
   AcpDraftUpdateSummary,
+  AcpSupersedeRequest,
+  AcpSupersedeResponse,
   AcpLifecycleResponse
 } from './types';
 
@@ -673,6 +675,31 @@ class GatewayClient {
     if (reason) body.reason = reason;
     return this.request<AcpLifecycleResponse>(
       `/api/v2/crm/acp/versions/${encodeURIComponent(acpId)}/${version}/activate`,
+      { method: 'POST', body: JSON.stringify(body) }
+    );
+  }
+
+  /** APPROVED -> replacement of the current ACTIVE ACP, atomically
+   *  (canonical lifecycle; requires ACTIVATE_ACP).  This is the ONLY
+   *  action that changes the ACP used by qualification.  The previous
+   *  ACTIVE becomes SUPERSEDED in the same committed operation. */
+  async crmSupersedeAcp(
+    acpId: string,
+    version: number,
+    expectedActiveVersionId: string,
+    expectedReplacementToken: string,
+    idempotencyKey?: string,
+    reason?: string
+  ): Promise<AcpSupersedeResponse> {
+    const body: AcpSupersedeRequest = {
+      actor_id: CRM_WEBUI_ACTOR_ID,
+      expected_active_version_id: expectedActiveVersionId,
+      expected_replacement_token: expectedReplacementToken,
+    };
+    if (idempotencyKey) body.idempotency_key = idempotencyKey;
+    if (reason) body.reason = reason;
+    return this.request<AcpSupersedeResponse>(
+      `/api/v2/crm/acp/versions/${encodeURIComponent(acpId)}/${version}/supersede`,
       { method: 'POST', body: JSON.stringify(body) }
     );
   }

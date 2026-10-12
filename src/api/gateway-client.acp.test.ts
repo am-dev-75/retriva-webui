@@ -123,6 +123,28 @@ describe('canonical ACP client', () => {
     });
   });
 
+  it('activates a replacement through the canonical supersede path', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({}));
+    await gatewayClient.crmSupersedeAcp(
+      'acp_x',
+      5,
+      'acpver_active1',
+      'acptok_replacement',
+      'acpui-supersede-1'
+    );
+    const [url, init] = lastCall();
+    expect(url.endsWith('/api/v2/crm/acp/versions/acp_x/5/supersede')).toBe(
+      true
+    );
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(String(init?.body))).toEqual({
+      actor_id: CRM_WEBUI_ACTOR_ID,
+      expected_active_version_id: 'acpver_active1',
+      expected_replacement_token: 'acptok_replacement',
+      idempotency_key: 'acpui-supersede-1',
+    });
+  });
+
   it('surfaces the backend status/code/detail on typed conflicts', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       jsonResponse(

@@ -41,6 +41,7 @@ vi.mock('../../../api/gateway-client', async (importOriginal) => {
       crmStartAcpReview: vi.fn(),
       crmApproveAcp: vi.fn(),
       crmActivateAcp: vi.fn(),
+      crmSupersedeAcp: vi.fn(),
     },
   };
 });
@@ -155,6 +156,8 @@ function inFlightVersion(overrides: Record<string, unknown> = {}) {
     editable: false as const,
     created_at: '2026-01-04T10:00:00Z',
     updated_at: '2026-01-04T10:00:00Z',
+    concurrency_token: 'acptok_inflight',
+    concurrency_token_kind: 'VERSION_STATE_TOKEN' as const,
     ...overrides,
   };
 }
@@ -502,54 +505,90 @@ describe('AcpEditor — lifecycle actions', () => {
     expect(gatewayClient.crmActivateAcp).not.toHaveBeenCalled();
   });
 
-  it('activates an APPROVED version with a qualification warning', async () => {
+  it('replaces the ACTIVE version with an APPROVED replacement in one call', async () => {
     const state = makeState({
       inFlight: inFlightVersion({ status: 'APPROVED' }),
     });
     stateMock().mockResolvedValueOnce(state).mockResolvedValueOnce(state);
-    (gatewayClient.crmActivateAcp as unknown as Mock).mockResolvedValue({});
+    (gatewayClient.crmSupersedeAcp as unknown as Mock).mockResolvedValue({
+      idempotent_replay: false,
+    });
     await renderEditor(state);
 
-    fireEvent.click(screen.getByRole('button', { name: /Activate/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /Activate replacement/ })
+    );
     await waitFor(() =>
       expect(window.confirm).toHaveBeenCalledWith(
-        expect.stringMatching(/changes the ACP used by qualification/)
+        expect.stringMatching(/becomes SUPERSEDED/)
       )
     );
     await waitFor(() =>
-      expect(gatewayClient.crmActivateAcp).toHaveBeenCalledWith(
-        'acp_alpha',
-        5
+      expect(window.confirm).toHaveBeenCalledWith(
+        expect.stringMatching(/qualification switches to the replacement/)
       )
     );
-    expect(await screen.findByText(/is now ACTIVE/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(gatewayClient.crmSupersedeAcp).toHaveBeenCalledTimes(1)
+    );
+    const [acpId, version, activeToken, replacementToken, idempotencyKey] =
+      (gatewayClient.crmSupersedeAcp as unknown as Mock).mock.calls[0];
+    expect(acpId).toBe('acp_alpha');
+    expect(version).toBe(5);
+    expect(activeToken).toBe('acpver_active1');
+    expect(replacementToken).toBe('acptok_inflight');
+    expect(idempotencyKey).toMatch(/^acpui-supersede-/);
+    // One governed call: no chained activate/status mutation.
+    expect(gatewayClient.crmActivateAcp).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(/is now ACTIVE and the previous/)
+    ).toBeInTheDocument();
+    expect(stateMock()).toHaveBeenCalledTimes(2); // refreshed
   });
 
-  it('hides lifecycle actions the actor is not permitted to perform', async () => {
+  it('keeps the view and unsaved edits when the replacement conflicts', async () => {
+    (gatewayClient.crmSupersedeAcp as unknown as Mock).mockRejectedValue(
+      errorWith({ status: 409, code: 'ACP_ACTIVE_CONFLICT' })
+    );
+    await renderEditor(
+      makeState({ inFlight: inFlightVersion({ status: 'APPROVED' }) })
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: /Activate replacement/ })
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Reload the latest state/
+    );
+    // No implicit switch and no automatic refresh/retry.
+    expect(stateMock()).toHaveBeenCalledTimes(1);
+    expect(gatewayClient.crmSupersedeAcp).toHaveBeenCalledTimes(1);
+  });
+
+  it('explains that a replacement is no longer APPROVED', async () => {
+    (gatewayClient.crmSupersedeAcp as unknown as Mock).mockRejectedValue(
+      errorWith({ status: 409, code: 'ACP_NOT_APPROVED' })
+    );
+    await renderEditor(
+      makeState({ inFlight: inFlightVersion({ status: 'APPROVED' }) })
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: /Activate replacement/ })
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /no longer APPROVED/
+    );
+  });
+
+  it('hides the replacement action without the activation capability', async () => {
     await renderEditor(
       makeState({
         inFlight: inFlightVersion({ status: 'APPROVED' }),
         caps: { ...ALL_CAPS, can_activate: false },
       })
     );
-    expect(screen.queryByRole('button', { name: /Activate/ })).toBeNull();
-  });
-
-  it('explains that activation needs supersession when another version is ACTIVE', async () => {
-    const state = makeState({
-      inFlight: inFlightVersion({ status: 'APPROVED' }),
-    });
-    stateMock().mockResolvedValueOnce(state).mockResolvedValueOnce(state);
-    (gatewayClient.crmActivateAcp as unknown as Mock).mockRejectedValue(
-      errorWith({ status: 409, code: 'ACP_ACTIVE_CONFLICT' })
-    );
-    await renderEditor(state);
-    fireEvent.click(screen.getByRole('button', { name: /Activate/ }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      /requires supersession/
-    );
-    // No implicit switch happened; the view did not refresh.
-    expect(stateMock()).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole('button', { name: /Activate replacement/ })
+    ).toBeNull();
   });
 });
 

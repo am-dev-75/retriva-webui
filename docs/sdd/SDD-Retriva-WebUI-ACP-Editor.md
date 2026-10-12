@@ -18,7 +18,8 @@ PostgreSQL ACP workflow:
 | submit for review | `POST /api/v2/crm/acp/versions/{acp_id}/{v}/submit-review` |
 | start review | `POST /api/v2/crm/acp/versions/{acp_id}/{v}/start-review` |
 | approve | `POST /api/v2/crm/acp/versions/{acp_id}/{v}/approve` |
-| activate | `POST /api/v2/crm/acp/versions/{acp_id}/{v}/activate` |
+| activate (first/bootstrap) | `POST /api/v2/crm/acp/versions/{acp_id}/{v}/activate` |
+| activate a replacement (Slice C2) | `POST /api/v2/crm/acp/versions/{acp_id}/{v}/supersede` |
 
 The legacy client methods (`crmGetAcpText`, `crmSaveAcpText`,
 `crmUpdateAcp`, `crmGetAcp`) were removed, and a source-level guard test
@@ -100,20 +101,23 @@ secrets, Markdown bodies or tokens are logged or displayed.
 - **Approve** — only for an `UNDER_REVIEW` in-flight version and
   `can_approve`; the confirmation states that approval does **not**
   activate.
-- **Activate** — only for an `APPROVED` in-flight version and
-  `can_activate`; the confirmation states that it **changes the ACP used
-  by qualification**.
+- **Activate replacement** (Slice C2) — only for an `APPROVED` in-flight
+  version and `can_activate`.  One governed call to
+  `POST /api/v2/crm/acp/versions/{acp_id}/{v}/supersede` submits the
+  current ACTIVE token and the replacement's state token; the server
+  atomically supersedes the old ACTIVE and activates the replacement, so
+  there is never a window without an ACTIVE version.  The confirmation
+  states that the current version becomes **SUPERSEDED** and that
+  **qualification switches to the replacement**.  This replaced the
+  Slice-C dead-end where activation could not complete while another
+  version was ACTIVE.
 - Capabilities come from the server; the UI only hides/shows controls and
   every endpoint authorizes independently.
-- **Known remainder:** when a different version is already ACTIVE, the
-  canonical `/activate` endpoint fails closed with
-  `409 ACP_ACTIVE_CONFLICT` because switching requires **supersession**,
-  which currently has no canonical HTTP endpoint (the governed
-  `supersede_acp` service primitive exists). The UI explains this and
-  points to the cohort workflow console. Exposing supersession is a
-  candidate for the next slice.
-- Reject/rollback are not surfaced by this view (recorded remainder;
-  available through the cohort console).
+- The canonical `/activate` endpoint remains the governed
+  first-activation path (no ACTIVE version yet); it is not reachable from
+  this view because the editor only appears alongside an ACTIVE ACP.
+- Reject/rollback are not surfaced by this view (console-only, as
+  confirmed by the owner).
 
 ## 5. Markdown security
 
@@ -165,6 +169,11 @@ The component is applied to the ACP only — not to ICP or CCO.
 - `src/features/crm/canonical-acp-source-guard.test.ts` — source-level
   regression guard (legacy endpoints, unsafe HTML, logging, KB coupling,
   ICP/weights).
+- `src/features/crm/components/AcpEditor.test.tsx` also covers the
+  replacement action: visibility, confirmation wording, the exact single
+  call with both tokens and a bounded key, success refresh, conflict
+  handling (no automatic retry, edits preserved), and the absence of any
+  chained/two-step client-side status mutation.
 - Backend contract acceptance:
   `retriva-crm-assistant/tests/test_acp_webui_contract.py` drives the
   same HTTP contract end-to-end on a disposable database and proves that
@@ -178,7 +187,7 @@ acceptance provide the coverage, and the gap is recorded here.
 ## 8. Not in this slice
 
 Legacy content reconciliation (Slice D), legacy writer/fallback
-retirement and SQLite re-keying (Slice E), a supersession endpoint, new
+retirement and SQLite re-keying (Slice E), reject/rollback UI, new
 canonical ICP, Settings/weights, composite scoring, shared Markdown
 components, CCO changes, deployment or live migration. The legacy
 free-text backend remains temporarily operational for its existing

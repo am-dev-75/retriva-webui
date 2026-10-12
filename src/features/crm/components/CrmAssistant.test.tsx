@@ -45,6 +45,7 @@ vi.mock('../../../api/gateway-client', async (importOriginal) => {
       crmStartAcpReview: vi.fn(),
       crmApproveAcp: vi.fn(),
       crmActivateAcp: vi.fn(),
+      crmSupersedeAcp: vi.fn(),
       crmGetCcoText: vi.fn(),
       crmSaveCcoText: vi.fn(),
       crmUpdateCco: vi.fn(),

@@ -67,7 +67,11 @@ interface ConflictInfo {
   message: string;
 }
 
-type LifecycleKind = 'submit' | 'start-review' | 'approve' | 'activate';
+type LifecycleKind =
+  | 'submit'
+  | 'start-review'
+  | 'approve'
+  | 'activate-replacement';
 
 interface LifecycleActionDef {
   kind: LifecycleKind;
@@ -131,12 +135,17 @@ function saveErrorMessage(error: unknown): string {
  *  the UI says so instead of pretending the action can succeed. */
 function lifecycleErrorMessage(error: unknown): string {
   const err = error as GatewayRequestError;
-  if (err?.status === 409 && err.code === 'ACP_ACTIVE_CONFLICT') {
+  const status = err?.status;
+  const detail = err?.detail;
+  if (status === 409 && (err.code === 'ACP_ACTIVE_CONFLICT'
+      || err.code === 'ACP_REPLACEMENT_CONFLICT')) {
     return (
-      'A different version is already ACTIVE. Switching the active ACP ' +
-      'requires supersession, which is not available in this view yet: ' +
-      'use the cohort workflow console for that operation.'
+      (detail ? `${detail} ` : '') +
+      'Reload the latest state and review it before retrying.'
     );
+  }
+  if (status === 409 && err.code === 'ACP_NOT_APPROVED') {
+    return 'The replacement is no longer APPROVED; reload the latest state.';
   }
   return saveErrorMessage(error);
 }
@@ -325,16 +334,32 @@ export const AcpEditor: React.FC<AcpEditorProps> = ({ onDirtyChange }) => {
       });
     }
     if (inFlight?.status === 'APPROVED' && capabilities.can_activate) {
-      actions.push({
-        kind: 'activate',
-        label: 'Activate',
-        confirm:
-          `Activate version ${inFlight.version}? This changes the ACP used by qualification for the active tenant.`,
-        success: `Version ${inFlight.version} is now ACTIVE. Qualification uses it from now on.`,
-        requiresClean: false,
-        run: () =>
-          gatewayClient.crmActivateAcp(inFlight.acp_id, inFlight.version),
-      });
+      const replacementToken = inFlight.concurrency_token;
+      const currentActive = editorState.active;
+      if (replacementToken && currentActive) {
+        actions.push({
+          kind: 'activate-replacement',
+          label: 'Activate replacement',
+          confirm:
+            `Replace the ACTIVE ACP (v${currentActive.version}) with version ` +
+            `${inFlight.version}? The current version becomes SUPERSEDED and ` +
+            'qualification switches to the replacement.',
+          success:
+            `Version ${inFlight.version} is now ACTIVE and the previous ` +
+            'version is SUPERSEDED. Qualification uses the replacement ' +
+            'from now on.',
+          requiresClean: false,
+          run: () =>
+            gatewayClient.crmSupersedeAcp(
+              inFlight.acp_id,
+              inFlight.version,
+              currentActive.concurrency_token,
+              replacementToken,
+              `acpui-supersede-${currentActive.acp_version_id}-` +
+              `${inFlight.acp_version_id}`
+            ),
+        });
+      }
     }
     return actions;
   }, [capabilities, draft, editorState, inFlight]);

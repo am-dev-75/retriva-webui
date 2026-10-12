@@ -351,6 +351,13 @@ export interface AcpEditorInFlight {
   editable: false;
   created_at: string | null;
   updated_at: string | null;
+  /**
+   * Slice C2: opaque, tenant-bound state token for this version; supply
+   * it as `expected_replacement_token` when activating it as a
+   * replacement.
+   */
+  concurrency_token?: string;
+  concurrency_token_kind?: 'VERSION_STATE_TOKEN';
 }
 
 export interface AcpEditorCapabilities {
@@ -447,4 +454,37 @@ export interface AcpLifecycleResponse {
   version: number;
   status: string;
   payload_sha256?: string;
+}
+
+// --- Governed replacement activation (ACP authority transition, Slice C2) ---
+
+export interface AcpSupersedeRequest {
+  actor_id: string;
+  /** Current ACTIVE version id (its concurrency token). */
+  expected_active_version_id: string;
+  /** State token of the APPROVED replacement version. */
+  expected_replacement_token: string;
+  idempotency_key?: string;
+  reason?: string;
+}
+
+export interface AcpSupersedeVersionRef {
+  acp_version_id: string;
+  version: number;
+  status: string;
+}
+
+export interface AcpSupersedeResponse {
+  acp_id: string;
+  operation: 'SUPERSEDE';
+  /** The version that is now ACTIVE. */
+  activated: AcpSupersedeVersionRef;
+  /** The version that was displaced (now SUPERSEDED). */
+  superseded: AcpSupersedeVersionRef | null;
+  activation_id: string | null;
+  idempotent_replay: boolean;
+  correlation_id: string | null;
+  activated_at: string | null;
+  /** Always true: the committed operation changes the qualification binding. */
+  qualification_binding_changed: true;
 }
