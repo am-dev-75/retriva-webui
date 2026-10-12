@@ -282,3 +282,196 @@
   border-color: var(--accent, #3b82f6);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
+/* ------------------------------------------------------------------ */
+/* Canonical ACP editor (ACP authority transition, Slice C)           */
+/* ------------------------------------------------------------------ */
+
+.acp-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.acp-scope-text {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.acp-status {
+  align-items: center;
+  color: var(--text-secondary, #94a3b8);
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.acp-card {
+  background: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.acp-card h3 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.acp-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.acp-meta dt {
+  color: var(--text-secondary, #94a3b8);
+}
+
+.acp-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.acp-meta-line {
+  font-size: 0.85rem;
+  margin: 0 0 0.35rem 0;
+  overflow-wrap: anywhere;
+}
+
+.acp-editor-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.acp-editor-actions,
+.acp-lifecycle {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.acp-lifecycle {
+  border-top: 1px solid var(--border-color, #334155);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.acp-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.acp-hint {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.78rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.acp-dirty-hint {
+  color: #fcd34d;
+  font-size: 0.78rem;
+  margin: 0 0 0.35rem 0;
+}
+
+.acp-textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.acp-conflict-code {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.78rem;
+}
+
+/* Markdown preview: readable, wraps long/unbroken text, no horizontal
+   scrolling on narrow screens, keyboard-focusable links. */
+.acp-markdown {
+  background: var(--bg-primary, #0f172a);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  max-height: 32rem;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding: 0.9rem 1rem;
+}
+
+.acp-markdown :is(h1, h2, h3, h4, h5, h6) {
+  margin: 1rem 0 0.5rem 0;
+}
+
+.acp-markdown :is(table) {
+  border-collapse: collapse;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.acp-markdown :is(th, td) {
+  border: 1px solid var(--border-color, #334155);
+  padding: 0.25rem 0.5rem;
+}
+
+.acp-markdown :is(pre, code) {
+  background: var(--bg-secondary, #1e293b);
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.acp-markdown :is(pre) {
+  padding: 0.75rem;
+  overflow: auto;
+}
+
+.acp-markdown :is(a) {
+  color: var(--accent-color, #60a5fa);
+}
+
+.acp-markdown :is(a):focus-visible,
+.acp-editor :is(button):focus-visible,
+.acp-textarea:focus-visible {
+  outline: 2px solid var(--accent-color, #60a5fa);
+  outline-offset: 2px;
+}
+
+.acp-markdown-blocked {
+  color: var(--text-secondary, #94a3b8);
+  text-decoration: line-through;
+}
+
+@media (max-width: 640px) {
+  .acp-editor-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .acp-editor-actions,
+  .acp-lifecycle {
+    width: 100%;
+  }
+
+  .acp-editor-actions > *,
+  .acp-lifecycle > * {
+    flex: 1 1 auto;
+  }
+
+  .acp-meta {
+    grid-template-columns: 1fr;
+  }
+}

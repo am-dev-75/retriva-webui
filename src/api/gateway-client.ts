@@ -38,8 +38,32 @@ import {
   SessionArtifact,
   CrmJobResponse,
   CrmJobStatus,
-  GlobalVarResponse
+  GlobalVarResponse,
+  AcpEditorState,
+  AcpDraftCreateRequest,
+  AcpDraftSummary,
+  AcpDraftUpdateRequest,
+  AcpDraftUpdateSummary,
+  AcpLifecycleResponse
 } from './types';
+
+/**
+ * Non-authoritative actor hint sent in canonical ACP request bodies.
+ * The server resolves the acting identity from the authenticated
+ * principal (the Gateway injects `X-Retriva-User`) and never trusts a
+ * body-supplied id as authority; the field is required by the API
+ * contract only.
+ */
+export const CRM_WEBUI_ACTOR_ID = 'webui';
+
+/** Typed error carrying the canonical error `code` (and, for typed 4xx
+ *  responses, the backend's privacy-safe `detail`) when the backend
+ *  provides them (e.g. ACP_DRAFT_CONFLICT, ACP_ACTIVE_CONFLICT). */
+export type GatewayRequestError = Error & {
+  status?: number;
+  code?: string;
+  detail?: string;
+};
 
 interface DocumentListResponse {
   documents?: Document[];
@@ -99,6 +123,7 @@ class GatewayClient {
       // *why* a request failed (e.g. "No reference organizations found for
       // KB 'default'") instead of a bare status text.
       let detail = '';
+      let code: string | undefined;
       try {
         const body = await response.clone().json();
         detail =
@@ -107,14 +132,17 @@ class GatewayClient {
           body?.message ??
           '';
         if (typeof detail !== 'string') detail = JSON.stringify(detail);
+        if (typeof body?.code === 'string') code = body.code;
       } catch {
         // body was not JSON — fall through to status text only
       }
       const suffix = detail ? `: ${detail}` : '';
       const err = new Error(
         `Gateway Error: ${response.statusText}${suffix}`
-      ) as Error & { status?: number };
+      ) as GatewayRequestError;
       err.status = response.status;
+      err.code = code;
+      err.detail = detail || undefined;
       throw err;
     }
 
@@ -526,35 +554,130 @@ class GatewayClient {
     return this.request<unknown>(`/api/v2/crm/portfolio/${kbId}`);
   }
 
-  /** Build and return the current ACP family.  Deprecated /icp/ path
-   *  is kept as a server-side alias. */
-  async crmGetAcp(kbId: string): Promise<unknown[]> {
-    return this.request<unknown[]>(`/api/v2/crm/acp/${kbId}`);
-  }
-
   async crmHealth(): Promise<{ status: string; extension?: string }> {
     return this.request<{ status: string; extension?: string }>('/api/v2/crm/health');
   }
 
-  // --- ACP / CCO global variable text ---
-  async crmGetAcpText(kbId: string): Promise<GlobalVarResponse> {
-    return this.request<GlobalVarResponse>(`/api/v2/crm/acp/${kbId}/text`);
+  // --- Canonical tenant-scoped ACP editor (ACP authority transition) ---
+  //
+  // The ACP tab reads and writes ONLY these canonical PostgreSQL-backed
+  // endpoints.  The legacy per-KB free-text ACP endpoints are never
+  // called from the WebUI (Slice C); the legacy backend writer/fallback
+  // remains temporarily present for Slices D/E.
+
+  /** Load the canonical ACP editor state (ACTIVE + draft + in-flight +
+   *  capabilities + concurrency tokens). Read-only; tenant derived from
+   *  the authenticated principal. */
+  async crmGetAcpEditorState(): Promise<AcpEditorState> {
+    return this.request<AcpEditorState>('/api/v2/crm/acp/editor-state');
   }
 
-  async crmSaveAcpText(kbId: string, content: string): Promise<GlobalVarResponse> {
-    return this.request<GlobalVarResponse>(`/api/v2/crm/acp/${kbId}/text`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    });
-  }
-
-  async crmUpdateAcp(kbId: string): Promise<GlobalVarResponse> {
-    return this.request<GlobalVarResponse>(`/api/v2/crm/acp/${kbId}/update`, {
+  /** Create a new tenant ACP DRAFT from Markdown.  Never activates and
+   *  never changes qualification. */
+  async crmCreateAcpDraft(
+    sourceMarkdown: string,
+    expectedActiveVersionId: string,
+    idempotencyKey?: string
+  ): Promise<AcpDraftSummary> {
+    const body: AcpDraftCreateRequest = {
+      actor_id: CRM_WEBUI_ACTOR_ID,
+      source_markdown: sourceMarkdown,
+      expected_active_version_id: expectedActiveVersionId,
+    };
+    if (idempotencyKey) body.idempotency_key = idempotencyKey;
+    return this.request<AcpDraftSummary>('/api/v2/crm/acp/drafts', {
       method: 'POST',
+      body: JSON.stringify(body),
     });
   }
 
+  /** Update the canonical Markdown source of an existing editable
+   *  DRAFT (in-place Save). Never activates, never changes the ACTIVE
+   *  version, never changes qualification. */
+  async crmUpdateAcpDraft(
+    acpVersionId: string,
+    sourceMarkdown: string,
+    expectedDraftToken: string,
+    idempotencyKey?: string
+  ): Promise<AcpDraftUpdateSummary> {
+    const body: AcpDraftUpdateRequest = {
+      actor_id: CRM_WEBUI_ACTOR_ID,
+      source_markdown: sourceMarkdown,
+      expected_draft_token: expectedDraftToken,
+    };
+    if (idempotencyKey) body.idempotency_key = idempotencyKey;
+    return this.request<AcpDraftUpdateSummary>(
+      `/api/v2/crm/acp/drafts/${encodeURIComponent(acpVersionId)}/update`,
+      { method: 'POST', body: JSON.stringify(body) }
+    );
+  }
+
+  /** DRAFT -> REVIEW_READY (canonical lifecycle; requires REVIEW_ACP). */
+  async crmSubmitAcpForReview(
+    acpId: string,
+    version: number
+  ): Promise<AcpLifecycleResponse> {
+    return this.request<AcpLifecycleResponse>(
+      `/api/v2/crm/acp/versions/${encodeURIComponent(acpId)}/${version}/submit-review`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ actor_id: CRM_WEBUI_ACTOR_ID }),
+      }
+    );
+  }
+
+  /** REVIEW_READY -> UNDER_REVIEW (canonical lifecycle; requires
+   *  REVIEW_ACP). */
+  async crmStartAcpReview(
+    acpId: string,
+    version: number
+  ): Promise<AcpLifecycleResponse> {
+    return this.request<AcpLifecycleResponse>(
+      `/api/v2/crm/acp/versions/${encodeURIComponent(acpId)}/${version}/start-review`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ actor_id: CRM_WEBUI_ACTOR_ID }),
+      }
+    );
+  }
+
+  /** UNDER_REVIEW -> APPROVED (canonical lifecycle; requires
+   *  APPROVE_ACP). Approval never activates. */
+  async crmApproveAcp(
+    acpId: string,
+    version: number,
+    comments?: string
+  ): Promise<AcpLifecycleResponse> {
+    const body: Record<string, string> = {
+      actor_id: CRM_WEBUI_ACTOR_ID,
+      decision: 'APPROVED',
+    };
+    if (comments) body.comments = comments;
+    return this.request<AcpLifecycleResponse>(
+      `/api/v2/crm/acp/versions/${encodeURIComponent(acpId)}/${version}/approve`,
+      { method: 'POST', body: JSON.stringify(body) }
+    );
+  }
+
+  /** APPROVED -> ACTIVE (canonical lifecycle; requires ACTIVATE_ACP).
+   *  This is the ONLY action that changes the ACP used by
+   *  qualification. */
+  async crmActivateAcp(
+    acpId: string,
+    version: number,
+    reason?: string
+  ): Promise<AcpLifecycleResponse> {
+    const body: Record<string, string> = {
+      actor_id: CRM_WEBUI_ACTOR_ID,
+    };
+    if (reason) body.reason = reason;
+    return this.request<AcpLifecycleResponse>(
+      `/api/v2/crm/acp/versions/${encodeURIComponent(acpId)}/${version}/activate`,
+      { method: 'POST', body: JSON.stringify(body) }
+    );
+  }
+
+  // --- CCO global variable text (unchanged in Slice C) ---
   async crmGetCcoText(kbId: string): Promise<GlobalVarResponse> {
     return this.request<GlobalVarResponse>(`/api/v2/crm/cco/${kbId}/text`);
   }

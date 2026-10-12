@@ -14,20 +14,23 @@
  * limitations under the License.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Loader2, CheckCircle2, AlertCircle, Save, Sparkles } from 'lucide-react';
 import { gatewayClient } from '../../../api/gateway-client';
 import { useKnowledgeBase } from '../../../app/providers/KnowledgeBaseProvider';
 import type { GlobalVarResponse } from '../../../api/types';
+import { AcpEditor } from './AcpEditor';
+import { UNSAVED_ACP_MESSAGE } from './useUnsavedChangesGuard';
 import './CrmAssistant.css';
 
 /**
- * CRM Assistant page — ACP and CCO management.
+ * CRM Assistant page — canonical ACP editor and CCO management.
  *
- * The ACP (Average Customer Profile) and CCO are deployment-global concepts
- * (not per-KB), presented in two tabs.  Candidate qualification is carried
- * out by users through the chat; this page intentionally has no
- * upload/qualification sections.
+ * The ACP tab is the canonical tenant-scoped PostgreSQL workflow
+ * (Slices A/B/C): it reads the canonical editor state and saves drafts;
+ * it does not depend on the KB selection and never calls the legacy
+ * per-KB free-text ACP endpoints.  The CCO tab remains the existing
+ * KB-scoped free-text surface (unchanged in Slice C).
  */
 type CrmTab = 'acp' | 'cco';
 
@@ -37,54 +40,43 @@ export const CrmAssistant: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  // ACP / CCO global variables
-  const [acpText, setAcpText] = useState('');
-  const [acpMeta, setAcpMeta] = useState<GlobalVarResponse | null>(null);
+  // CCO remains the KB-scoped free-text editor (unchanged).
   const [ccoText, setCcoText] = useState('');
   const [ccoMeta, setCcoMeta] = useState<GlobalVarResponse | null>(null);
-  const [acpSaving, setAcpSaving] = useState(false);
   const [ccoSaving, setCcoSaving] = useState(false);
   const [ccoUpdating, setCcoUpdating] = useState(false);
 
+  // The ACP tab reports its unsaved-edits state so switching tabs can
+  // warn before discarding local edits.
+  const acpDirtyRef = useRef(false);
+  const handleAcpDirtyChange = useCallback((dirty: boolean) => {
+    acpDirtyRef.current = dirty;
+  }, []);
+
   const kbId = selectedKbIds.length > 0 ? selectedKbIds[0] : 'default';
 
-  // Load ACP / CCO text (both are global; kbId is ignored by the backend).
-  const loadGlobalVars = useCallback(async () => {
-    try {
-      const acp = await gatewayClient.crmGetAcpText(kbId);
-      setAcpText(acp.content || '');
-      setAcpMeta(acp);
-    } catch {
-      setAcpText('');
-      setAcpMeta(null);
-    }
-    try {
-      const cco = await gatewayClient.crmGetCcoText(kbId);
-      setCcoText(cco.content || '');
-      setCcoMeta(cco);
-    } catch {
-      setCcoText('');
-      setCcoMeta(null);
-    }
-  }, [kbId]);
-
-  useEffect(() => {
-    loadGlobalVars();
-  }, [loadGlobalVars]);
-
-  const handleSaveAcp = useCallback(async () => {
-    setAcpSaving(true);
-    setError(null);
-    try {
-      const resp = await gatewayClient.crmSaveAcpText(kbId, acpText);
-      setAcpMeta(resp);
-      setInfo('ACP saved.');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save ACP');
-    } finally {
-      setAcpSaving(false);
-    }
-  }, [kbId, acpText]);
+  const switchTab = useCallback(
+    (next: CrmTab) => {
+      if (next === activeTab) return;
+      if (acpDirtyRef.current && !window.confirm(UNSAVED_ACP_MESSAGE)) return;
+      setActiveTab(next);
+      setError(null);
+      setInfo(null);
+      if (next === 'cco') {
+        void gatewayClient
+          .crmGetCcoText(kbId)
+          .then((cco) => {
+            setCcoText(cco.content || '');
+            setCcoMeta(cco);
+          })
+          .catch(() => {
+            setCcoText('');
+            setCcoMeta(null);
+          });
+      }
+    },
+    [activeTab, kbId]
+  );
 
   const handleSaveCco = useCallback(async () => {
     setCcoSaving(true);
@@ -120,15 +112,16 @@ export const CrmAssistant: React.FC = () => {
       <header className="crm-header">
         <h1>CRM Assistant</h1>
         <p className="crm-subtitle">
-          Manage the Ideal Customer Profile and the Company Commercial Offering.
-          Candidate qualification is carried out through the chat.
+          Manage the Average Customer Profile (ACP) and the Company
+          Commercial Offering (CCO). Candidate qualification is carried out
+          through the chat.
         </p>
       </header>
 
       <div className="crm-tabs" role="tablist">
         <button
           className={`crm-tab ${activeTab === 'acp' ? 'crm-tab-active' : ''}`}
-          onClick={() => setActiveTab('acp')}
+          onClick={() => switchTab('acp')}
           role="tab"
           aria-selected={activeTab === 'acp'}
         >
@@ -136,7 +129,7 @@ export const CrmAssistant: React.FC = () => {
         </button>
         <button
           className={`crm-tab ${activeTab === 'cco' ? 'crm-tab-active' : ''}`}
-          onClick={() => setActiveTab('cco')}
+          onClick={() => switchTab('cco')}
           role="tab"
           aria-selected={activeTab === 'cco'}
         >
@@ -156,7 +149,7 @@ export const CrmAssistant: React.FC = () => {
       )}
 
       {activeTab === 'acp' && (
-        <div className="crm-section crm-global-var" role="tabpanel">
+        <div className="crm-section" role="tabpanel" aria-label="Average Customer Profile">
           <div className="crm-global-var-header">
             <h2>Average Customer Profile (ACP)</h2>
             <div className="crm-global-var-actions">
@@ -170,28 +163,9 @@ export const CrmAssistant: React.FC = () => {
                 <Sparkles size={14} />
                 Cohort workflow
               </a>
-              <button
-                className="crm-btn-primary crm-btn-sm"
-                onClick={handleSaveAcp}
-                disabled={acpSaving}
-              >
-                {acpSaving ? <Loader2 size={14} className="crm-icon-spin" /> : <Save size={14} />}
-                Save
-              </button>
             </div>
           </div>
-          {acpMeta?.updated_at && (
-            <p className="crm-global-var-meta">
-              Last updated: {new Date(acpMeta.updated_at).toLocaleString()} (source: {acpMeta.source})
-            </p>
-          )}
-          <textarea
-            className="crm-global-var-textarea"
-            value={acpText}
-            onChange={(e) => setAcpText(e.target.value)}
-            placeholder="The ACP will appear here after update or manual entry. You can edit this text freely."
-            rows={16}
-          />
+          <AcpEditor onDirtyChange={handleAcpDirtyChange} />
         </div>
       )}
 

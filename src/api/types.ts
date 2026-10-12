@@ -281,3 +281,170 @@ export interface GlobalVarResponse {
   updated_by: string | null;
   source: string;
 }
+
+// --- Canonical ACP editor (ACP authority transition, Slices B/C) ---
+//
+// Mirrors the canonical tenant-scoped PostgreSQL ACP surfaces:
+//   GET  /api/v2/crm/acp/editor-state
+//   POST /api/v2/crm/acp/drafts
+//   POST /api/v2/crm/acp/drafts/{acp_version_id}/update
+// The legacy free-text ACP store is never consulted for these surfaces.
+
+export type AcpEditorTokenKind = 'ACTIVE_VERSION_ID' | 'DRAFT_STATE_TOKEN';
+
+export interface AcpEditorActive {
+  acp_id: string;
+  acp_version_id: string;
+  version: number;
+  status: 'ACTIVE';
+  origin: string;
+  created_by: string | null;
+  created_at: string | null;
+  approved_at: string | null;
+  updated_at: string | null;
+  /** Authoritative source Markdown; null when unavailable (pre-V012). */
+  source_markdown: string | null;
+  source_markdown_available: boolean;
+  source_markdown_sha256: string | null;
+  source_markdown_chars: number | null;
+  /** Slice-A concurrency token: the opaque version id. */
+  concurrency_token: string;
+  concurrency_token_kind: 'ACTIVE_VERSION_ID';
+}
+
+export interface AcpEditorDraft {
+  acp_id: string;
+  acp_version_id: string;
+  version: number;
+  status: 'DRAFT';
+  origin: 'MARKDOWN_DRAFT';
+  predecessor_acp_version_id: string | null;
+  predecessor_version: number | null;
+  source_markdown: string;
+  source_markdown_sha256: string;
+  source_markdown_chars: number;
+  created_by: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  editable: true;
+  /** Opaque, state-derived token for the update endpoint. */
+  concurrency_token: string;
+  concurrency_token_kind: 'DRAFT_STATE_TOKEN';
+}
+
+export type AcpInFlightStatus =
+  | 'DRAFT'
+  | 'REVIEW_READY'
+  | 'UNDER_REVIEW'
+  | 'APPROVED'
+  | 'LEGACY_MIGRATED';
+
+export interface AcpEditorInFlight {
+  acp_id: string;
+  acp_version_id: string;
+  version: number;
+  status: AcpInFlightStatus;
+  origin: string;
+  has_source_markdown: boolean;
+  source_markdown_sha256: string | null;
+  source_markdown_chars: number | null;
+  editable: false;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface AcpEditorCapabilities {
+  can_view: boolean;
+  can_create_draft: boolean;
+  can_edit_draft: boolean;
+  can_submit_for_review: boolean;
+  can_review: boolean;
+  can_approve: boolean;
+  can_activate: boolean;
+}
+
+export interface AcpEditorStateFlags {
+  has_active: boolean;
+  active_markdown_available: boolean | null;
+  has_editable_draft: boolean;
+  has_in_flight_version: boolean;
+  editing_available: boolean;
+  blocked_reason: 'NO_ACTIVE_ACP' | null;
+}
+
+export interface AcpEditorState {
+  active: AcpEditorActive | null;
+  draft: AcpEditorDraft | null;
+  in_flight: AcpEditorInFlight | null;
+  capabilities: AcpEditorCapabilities;
+  state: AcpEditorStateFlags;
+  source_of_truth: string;
+  legacy_fallback_used: boolean;
+}
+
+export interface AcpDraftCreateRequest {
+  actor_id: string;
+  source_markdown: string;
+  expected_active_version_id: string;
+  idempotency_key?: string;
+}
+
+export interface AcpDraftSummary {
+  acp_id: string;
+  acp_version_id: string;
+  version: number;
+  status: 'DRAFT';
+  origin: 'MARKDOWN_DRAFT';
+  predecessor_acp_version_id: string | null;
+  predecessor_version: number | null;
+  has_source_markdown: boolean;
+  source_markdown_sha256: string | null;
+  source_markdown_chars: number | null;
+  payload_sha256: string;
+  created_by: string | null;
+  created_at: string | null;
+  idempotent_replay: boolean;
+  correlation_id: string | null;
+  activated: false;
+  qualification_binding_unchanged: true;
+}
+
+export interface AcpDraftUpdateRequest {
+  actor_id: string;
+  source_markdown: string;
+  expected_draft_token: string;
+  idempotency_key?: string;
+}
+
+export interface AcpDraftUpdateSummary {
+  acp_id: string;
+  acp_version_id: string;
+  version: number;
+  status: 'DRAFT';
+  origin: 'MARKDOWN_DRAFT';
+  source_markdown_sha256: string | null;
+  source_markdown_chars: number | null;
+  previous_source_markdown_sha256: string | null;
+  previous_source_markdown_chars: number | null;
+  /** The NEW draft token to use for the next save. */
+  concurrency_token: string;
+  updated_at: string | null;
+  idempotent_replay: boolean;
+  correlation_id: string | null;
+  activated: false;
+  qualification_binding_unchanged: true;
+}
+
+export interface AcpLifecycleRequest {
+  actor_id: string;
+  comments?: string;
+  reason?: string;
+  idempotency_key?: string;
+}
+
+export interface AcpLifecycleResponse {
+  acp_id: string;
+  version: number;
+  status: string;
+  payload_sha256?: string;
+}
