@@ -15,7 +15,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { Mock } from 'vitest';
 
 const legacyAcpSpies = vi.hoisted(() => {
@@ -49,6 +49,10 @@ vi.mock('../../../api/gateway-client', async (importOriginal) => {
       crmGetCcoText: vi.fn(),
       crmSaveCcoText: vi.fn(),
       crmUpdateCco: vi.fn(),
+      crmGetQualificationSettings: vi.fn(),
+      crmSaveQualificationSettings: vi.fn(),
+      crmGetIcpText: vi.fn(),
+      crmSaveIcpText: vi.fn(),
     },
   };
 });
@@ -122,6 +126,25 @@ describe('CrmAssistant — canonical ACP tab', () => {
       updated_by: 'author',
       source: 'kb',
     });
+    (gatewayClient.crmGetQualificationSettings as unknown as Mock)
+      .mockResolvedValue({
+        acp_weight: '0.2',
+        icp_weight: '0.4',
+        cco_weight: '0.4',
+        credit_threshold: '0.6',
+        updated_at: null,
+        updated_by: null,
+        source: 'defaults',
+        persisted: false,
+      });
+    (gatewayClient.crmGetIcpText as unknown as Mock).mockResolvedValue({
+      kb_id: 'default',
+      var_name: 'ideal_customer_profile',
+      content: '# Ideal customer\n\n- SaaS teams\n',
+      updated_at: '2026-01-06T10:00:00Z',
+      updated_by: 'author',
+      source: 'manual',
+    });
   });
 
   afterEach(() => {
@@ -181,14 +204,119 @@ describe('CrmAssistant — canonical ACP tab', () => {
     );
   });
 
-  it('exposes exactly the ACP and CCO tabs (no ICP / settings surface)', async () => {
+  it('orders Settings, ACP, ICP and CCO tabs', async () => {
     renderPage();
     await screen.findByLabelText('ACP Markdown source');
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(2);
-    expect(screen.queryByText(/Ideal Customer Profile/)).toBeNull();
-    expect(screen.queryByText(/\bICP\b/)).toBeNull();
-    expect(screen.queryByRole('tab', { name: /Settings|Weights/i })).toBeNull();
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      'Qualification Settings',
+      'Average Customer Profile (ACP)',
+      'Ideal Customer Profile (ICP)',
+      'Company Commercial Offering (CCO)',
+    ]);
+  });
+
+  it('shows and saves the requested coefficient defaults', async () => {
+    renderPage();
+    await screen.findByLabelText('ACP Markdown source');
+    fireEvent.click(
+      screen.getByRole('tab', { name: /Qualification Settings/ })
+    );
+    const acp = (await screen.findByLabelText('ACP weight')) as HTMLInputElement;
+    const icp = screen.getByLabelText('ICP weight') as HTMLInputElement;
+    const cco = screen.getByLabelText('CCO weight') as HTMLInputElement;
+    const credit = screen.getByLabelText(
+      'Credit threshold'
+    ) as HTMLInputElement;
+    expect([acp.value, icp.value, cco.value, credit.value]).toEqual([
+      '0.2',
+      '0.4',
+      '0.4',
+      '0.6',
+    ]);
+
+    (gatewayClient.crmSaveQualificationSettings as unknown as Mock)
+      .mockResolvedValue({
+        acp_weight: '0.2',
+        icp_weight: '0.4',
+        cco_weight: '0.4',
+        credit_threshold: '0.6',
+        updated_at: '2026-01-07T10:00:00Z',
+        updated_by: 'webui',
+        source: 'manual',
+        persisted: true,
+      });
+    fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
+    await waitFor(() =>
+      expect(gatewayClient.crmSaveQualificationSettings).toHaveBeenCalledWith({
+        acp_weight: '0.2',
+        icp_weight: '0.4',
+        cco_weight: '0.4',
+        credit_threshold: '0.6',
+      })
+    );
+  });
+
+  it('blocks saving weights that do not sum to one', async () => {
+    renderPage();
+    await screen.findByLabelText('ACP Markdown source');
+    fireEvent.click(
+      screen.getByRole('tab', { name: /Qualification Settings/ })
+    );
+    fireEvent.change(await screen.findByLabelText('ACP weight'), {
+      target: { value: '0.3' },
+    });
+    expect(screen.getByText(/must sum to 1/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Save$/ })).toBeDisabled();
+  });
+
+  it('loads, previews and saves the user-authored ICP', async () => {
+    renderPage();
+    await screen.findByLabelText('ACP Markdown source');
+    fireEvent.click(screen.getByRole('tab', { name: /Ideal Customer Profile/ }));
+    const textarea = (await screen.findByLabelText(
+      'ICP Markdown source'
+    )) as HTMLTextAreaElement;
+    expect(textarea.value).toBe('# Ideal customer\n\n- SaaS teams\n');
+
+    fireEvent.change(textarea, { target: { value: '# Updated ICP\n' } });
+    fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+    expect(
+      within(screen.getByTestId('icp-markdown-preview')).getByRole('heading', {
+        name: 'Updated ICP',
+      })
+    ).toBeInTheDocument();
+
+    (gatewayClient.crmSaveIcpText as unknown as Mock).mockResolvedValue({
+      kb_id: 'default',
+      var_name: 'ideal_customer_profile',
+      content: '# Updated ICP\n',
+      updated_at: '2026-01-08T10:00:00Z',
+      updated_by: 'webui',
+      source: 'manual',
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
+    await waitFor(() =>
+      expect(gatewayClient.crmSaveIcpText).toHaveBeenCalledWith(
+        'default',
+        '# Updated ICP\n'
+      )
+    );
+  });
+
+  it('renders the CCO as Markdown through the hardened preview', async () => {
+    renderPage();
+    await screen.findByLabelText('ACP Markdown source');
+    fireEvent.click(
+      screen.getByRole('tab', { name: /Company Commercial Offering/ })
+    );
+    await screen.findByLabelText('CCO Markdown source');
+    fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+    expect(
+      within(screen.getByTestId('cco-markdown-preview')).getByRole('heading', {
+        name: 'CCO text',
+      })
+    ).toBeInTheDocument();
   });
 
   it('warns before leaving the ACP tab with unsaved edits', async () => {

@@ -282,6 +282,26 @@ export interface GlobalVarResponse {
   source: string;
 }
 
+/** Tenant-global CRM qualification coefficients. Decimal strings are
+ *  preserved end-to-end so the UI never introduces binary rounding. */
+export interface QualificationSettings {
+  acp_weight: string;
+  icp_weight: string;
+  cco_weight: string;
+  credit_threshold: string;
+  updated_at: string | null;
+  updated_by: string | null;
+  source: string;
+  persisted: boolean;
+}
+
+export interface QualificationSettingsInput {
+  acp_weight: string;
+  icp_weight: string;
+  cco_weight: string;
+  credit_threshold: string;
+}
+
 // --- Canonical ACP editor (ACP authority transition, Slices B/C) ---
 //
 // Mirrors the canonical tenant-scoped PostgreSQL ACP surfaces:

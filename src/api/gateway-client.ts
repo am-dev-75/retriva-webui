@@ -39,6 +39,8 @@ import {
   CrmJobResponse,
   CrmJobStatus,
   GlobalVarResponse,
+  QualificationSettings,
+  QualificationSettingsInput,
   AcpEditorState,
   AcpDraftCreateRequest,
   AcpDraftSummary,
@@ -713,7 +715,7 @@ class GatewayClient {
     return this.request<GlobalVarResponse>(`/api/v2/crm/cco/${kbId}/text`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, updated_by: CRM_WEBUI_ACTOR_ID }),
     });
   }
 
@@ -721,6 +723,52 @@ class GatewayClient {
     return this.request<GlobalVarResponse>(`/api/v2/crm/cco/${kbId}/update`, {
       method: 'POST',
     });
+  }
+
+  // --- Qualification coefficients and user-authored ICP ---
+  async crmGetQualificationSettings(): Promise<QualificationSettings> {
+    return this.request<QualificationSettings>(
+      '/api/v2/crm/qualification-settings'
+    );
+  }
+
+  async crmSaveQualificationSettings(
+    settings: QualificationSettingsInput
+  ): Promise<QualificationSettings> {
+    return this.request<QualificationSettings>(
+      '/api/v2/crm/qualification-settings',
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...settings,
+          updated_by: CRM_WEBUI_ACTOR_ID,
+        }),
+      }
+    );
+  }
+
+  async crmGetIcpText(kbId: string): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(
+      `/api/v2/crm/ideal-customer-profile/${encodeURIComponent(kbId)}/text`
+    );
+  }
+
+  async crmSaveIcpText(
+    kbId: string,
+    content: string
+  ): Promise<GlobalVarResponse> {
+    return this.request<GlobalVarResponse>(
+      `/api/v2/crm/ideal-customer-profile/${encodeURIComponent(kbId)}/text`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          updated_by: CRM_WEBUI_ACTOR_ID,
+        }),
+      }
+    );
   }
 }
 

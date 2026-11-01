@@ -48,15 +48,21 @@ import {
 interface AcpMarkdownPreviewProps {
   markdown: string;
   className?: string;
+  testId?: string;
+  ariaLabel?: string;
 }
 
 export const AcpMarkdownPreview: React.FC<AcpMarkdownPreviewProps> = ({
   markdown,
   className,
+  testId = 'acp-markdown-preview',
+  ariaLabel,
 }) => (
   <div
     className={`acp-markdown${className ? ` ${className}` : ''}`}
-    data-testid="acp-markdown-preview"
+    data-testid={testId}
+    aria-label={ariaLabel}
+    role={ariaLabel ? 'region' : undefined}
   >
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}

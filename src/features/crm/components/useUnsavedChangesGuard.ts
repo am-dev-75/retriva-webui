@@ -20,7 +20,7 @@ export const UNSAVED_ACP_MESSAGE =
   'You have unsaved ACP edits. Continuing will discard them.';
 
 /**
- * Warn on page/tab/route navigation while there are unsaved ACP edits.
+ * Warn on page/tab/route navigation while there are unsaved edits.
  *
  * - `beforeunload` covers browser reload / close / hard navigation (the
  *   browser shows its own confirmation);
@@ -31,8 +31,11 @@ export const UNSAVED_ACP_MESSAGE =
  * - in-component navigation (tab switches, Cancel) uses
  *   `confirmDiscard()`.
  */
-export function useUnsavedChangesGuard(dirty: boolean): {
-  confirmDiscard: (message?: string) => boolean;
+export function useUnsavedChangesGuard(
+  dirty: boolean,
+  message: string = UNSAVED_ACP_MESSAGE
+): {
+  confirmDiscard: (overrideMessage?: string) => boolean;
 } {
   useEffect(() => {
     if (!dirty) return undefined;
@@ -68,18 +71,19 @@ export function useUnsavedChangesGuard(dirty: boolean): {
       ) {
         return; // same page (anchor or query-only)
       }
-      if (!window.confirm(UNSAVED_ACP_MESSAGE)) {
+      if (!window.confirm(message)) {
         event.preventDefault();
         event.stopPropagation();
       }
     };
     document.addEventListener('click', onClick, true);
     return () => document.removeEventListener('click', onClick, true);
-  }, [dirty]);
+  }, [dirty, message]);
 
   const confirmDiscard = useCallback(
-    (message: string = UNSAVED_ACP_MESSAGE) => !dirty || window.confirm(message),
-    [dirty]
+    (overrideMessage?: string) =>
+      !dirty || window.confirm(overrideMessage ?? message),
+    [dirty, message]
   );
 
   return { confirmDiscard };

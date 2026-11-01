@@ -145,12 +145,18 @@ describe('canonical ACP source guard', () => {
     }
   });
 
-  it('contains no ICP, settings or weights surface', () => {
-    for (const [name, source] of Object.entries(ACP_SOURCES)) {
-      expect(/\bICP\b/.test(source), name).toBe(false);
-      expect(/\bicp_/.test(source), name).toBe(false);
-      expect(/composite[_-]?score/i.test(source), name).toBe(false);
-      expect(/profile[_-]?weights/i.test(source), name).toBe(false);
-    }
+  it('uses dedicated ICP and qualification-settings surfaces', () => {
+    expect(ACP_SOURCES.gatewayClient).toContain(
+      '/api/v2/crm/ideal-customer-profile/'
+    );
+    expect(ACP_SOURCES.gatewayClient).toContain(
+      '/api/v2/crm/qualification-settings'
+    );
+    expect(ACP_SOURCES.CrmAssistant).toContain('crmGetIcpText');
+    expect(ACP_SOURCES.CrmAssistant).toContain(
+      'crmSaveQualificationSettings'
+    );
+    expect(ACP_SOURCES.CrmAssistant).toContain('AcpMarkdownPreview');
+    expect(ACP_SOURCES.CrmAssistant).not.toContain('/api/v2/crm/icp/');
   });
 });
