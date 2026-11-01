@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ssr
+coverage
+.git
+.gitignore
+scratch
+artifacts
+*.log
+.env
+.env.*
+!.env.example
+.vscode
+.idea
+.DS_Store
