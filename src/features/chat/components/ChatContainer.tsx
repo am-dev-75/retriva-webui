@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Square, User, Bot, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Filter, Mic, Paperclip, FileText, Loader2, X } from 'lucide-react';
+import { Send, Square, User, Bot, ThumbsUp, ThumbsDown, RotateCcw, Copy, ClipboardCopy, Check, Filter, Mic, Paperclip, FileText, Loader2, X } from 'lucide-react';
 import { Message, Citation, SessionAttachment } from '../../../api/types';
 import { gatewayClient } from '../../../api/gateway-client';
 import { CONFIG } from '../../../app/config';
@@ -26,14 +26,23 @@ import { useMetadataFilters } from '../../metadata/hooks/useMetadataFilters';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { VoiceInputButton } from './VoiceInputButton';
+import { chatStore } from '../chatStore';
 import './Chat.css';
 
 export const ChatContainer: React.FC = () => {
   const { t } = useTranslation();
   const { selectedKbIds } = useKnowledgeBase();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, isLoading } = useSyncExternalStore(
+    chatStore.subscribe,
+    chatStore.getSnapshot,
+    chatStore.getSnapshot
+  );
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [copied, setCopied] = useState<{
+    messageId: string;
+    action: 'query' | 'response' | 'qa';
+  } | null>(null);
+  const copyResetRef = useRef<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [sttLanguage, setSttLanguage] = useState<'en' | 'it'>('en');
   const { 
@@ -45,7 +54,6 @@ export const ChatContainer: React.FC = () => {
   } = useMetadataFilters();
   
   const scrollRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Candidate-list qualification state (agent mode) ---
@@ -55,17 +63,18 @@ export const ChatContainer: React.FC = () => {
   const [candidateSessionId, setCandidateSessionId] = useState<string | null>(null);
   const [candidateAttachment, setCandidateAttachment] = useState<SessionAttachment | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isStartingQualification, setIsStartingQualification] = useState(false);
-  const [candidateJobId, setCandidateJobId] = useState<string | null>(null);
-  const [candidateJobState, setCandidateJobState] = useState<string | null>(null);
-  const [candidateJobError, setCandidateJobError] = useState<string | null>(null);
-  const candidatePollFailuresRef = useRef(0);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
+
+  useEffect(() => () => {
+    if (copyResetRef.current !== null) {
+      window.clearTimeout(copyResetRef.current);
+    }
+  }, []);
 
   const handleSend = async (messageOverride?: string) => {
     const text = messageOverride || input.trim();
@@ -78,12 +87,8 @@ export const ChatContainer: React.FC = () => {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
     if (!messageOverride) setInput('');
-    setIsLoading(true);
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+    const controller = chatStore.startRequest(userMessage);
 
     try {
       const response = await gatewayClient.sendChatMessage(
@@ -98,7 +103,7 @@ export const ChatContainer: React.FC = () => {
           ? { sessionId: candidateSessionId, attachmentIds: [candidateAttachment.attachment_id] }
           : undefined
       );
-      setMessages(prev => [...prev, { ...response, feedback: null }]);
+      chatStore.appendMessage({ ...response, feedback: null });
     } catch (error: unknown) {
       const err = error as Error;
       if (err?.name === 'AbortError') {
@@ -110,7 +115,7 @@ export const ChatContainer: React.FC = () => {
           timestamp: new Date().toISOString(),
           feedback: null,
         };
-        setMessages(prev => [...prev, interruptedMessage]);
+        chatStore.appendMessage(interruptedMessage);
       } else {
         console.error('Failed to send message:', error);
         
@@ -128,30 +133,27 @@ export const ChatContainer: React.FC = () => {
           timestamp: new Date().toISOString(),
           feedback: null,
         };
-        setMessages(prev => [...prev, assistantMessage]);
+        chatStore.appendMessage(assistantMessage);
       }
     } finally {
-      setIsLoading(false);
-      abortControllerRef.current = null;
+      chatStore.finishRequest(controller);
     }
   };
 
   const handleStop = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    chatStore.abort();
   }, []);
 
   // --- Candidate-list upload + qualification ---
 
   const addSystemMessage = (content: string) => {
-    setMessages(prev => [...prev, {
+    chatStore.appendMessage({
       id: (Date.now() + Math.random()).toString(),
       role: 'assistant',
       content,
       timestamp: new Date().toISOString(),
       feedback: null,
-    }]);
+    });
   };
 
   const handleCandidateFileSelected = async (
@@ -174,7 +176,7 @@ export const ChatContainer: React.FC = () => {
       addSystemMessage(
         t('chat.candidate_uploaded', {
           filename: attachment.original_filename,
-          id: attachment.attachment_id.slice(0, 8),
+          id: attachment.attachment_id,
         })
       );
     } catch (error) {
@@ -185,95 +187,9 @@ export const ChatContainer: React.FC = () => {
     }
   };
 
-  const handleStartQualification = async () => {
-    if (!candidateSessionId || !candidateAttachment || isStartingQualification) return;
-    const kbId = selectedKbIds[0] || 'default';
-    setIsStartingQualification(true);
-    try {
-      const job = await gatewayClient.crmQualify(
-        candidateSessionId,
-        candidateAttachment.attachment_id,
-        kbId
-      );
-      setCandidateJobId(job.job_id);
-      setCandidateJobState('created');
-      addSystemMessage(
-        t('chat.candidate_qualification_started', { job: job.job_id.slice(0, 12), kb: kbId })
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not start qualification';
-      addSystemMessage(`Error: ${message}`);
-    } finally {
-      setIsStartingQualification(false);
-    }
-  };
-
   const handleRemoveCandidateList = () => {
     setCandidateAttachment(null);
-    setCandidateJobId(null);
-    setCandidateJobState(null);
-    setCandidateJobError(null);
-    candidatePollFailuresRef.current = 0;
   };
-
-  // Poll the qualification job while it is active.
-  useEffect(() => {
-    if (!candidateJobId) return;
-    const state = candidateJobState?.toUpperCase() ?? '';
-    if (
-      state.startsWith('COMPLETED') || state === 'FAILED' ||
-      state === 'CANCELLED' || state === 'EXPIRED'
-    ) return;
-
-    const timer = setTimeout(async () => {
-      try {
-        const job = await gatewayClient.crmGetJob(candidateJobId);
-        candidatePollFailuresRef.current = 0;
-        setCandidateJobState(job.state);
-        setCandidateJobError(job.error ?? null);
-        if (
-          job.state.startsWith('COMPLETED') || job.state === 'FAILED' ||
-          job.state === 'CANCELLED' || job.state === 'EXPIRED'
-        ) {
-          const lines = [
-            t('chat.candidate_job_done', {
-              state: job.state,
-              candidates: job.candidate_count,
-              results: job.result_count,
-            }),
-            job.warnings?.length ? `Warnings: ${job.warnings.join(' | ')}` : '',
-            job.error ? `Error: ${job.error}` : '',
-          ].filter(Boolean);
-          addSystemMessage(lines.join('\n'));
-        }
-      } catch (error) {
-        // A 404 means the job record is gone (the CRM job registry is
-        // process-local in-memory, e.g. after a service restart). That is
-        // terminal, not transient: stop polling and surface it instead of
-        // polling forever with the panel frozen at the last state.
-        const isNotFound =
-          error instanceof Error && 'status' in error &&
-          (error as { status?: number }).status === 404;
-        if (isNotFound) {
-          setCandidateJobState('LOST');
-          addSystemMessage(
-            t('chat.candidate_job_lost', { job: candidateJobId })
-          );
-          return;
-        }
-        candidatePollFailuresRef.current += 1;
-        if (candidatePollFailuresRef.current >= 10) {
-          setCandidateJobState('LOST');
-          addSystemMessage(
-            t('chat.candidate_job_unreachable', { job: candidateJobId })
-          );
-          return;
-        }
-        // transient errors: keep polling
-      }
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [candidateJobId, candidateJobState]);
 
   const handleRepeatLast = useCallback(() => {
     // Find the last user message
@@ -286,7 +202,7 @@ export const ChatContainer: React.FC = () => {
   }, [messages, selectedKbIds]);
 
   const handleFeedback = useCallback((messageId: string, feedback: 'positive' | 'negative') => {
-    setMessages(prev =>
+    chatStore.updateMessages(prev =>
       prev.map(msg => {
         if (msg.id !== messageId) return msg;
         // Toggle: if the same feedback is clicked again, remove it
@@ -298,19 +214,42 @@ export const ChatContainer: React.FC = () => {
     // gatewayClient.sendFeedback(messageId, feedback);
   }, []);
 
-  const copyToClipboard = useCallback(async (text: string) => {
+  const copyToClipboard = useCallback(async (text: string): Promise<boolean> => {
     try {
       await navigator.clipboard.writeText(text);
+      return true;
     } catch {
       // Fallback for older browsers
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return copied;
+      } catch {
+        return false;
+      }
     }
   }, []);
+
+  const copyWithFeedback = useCallback(async (
+    text: string,
+    messageId: string,
+    action: 'query' | 'response' | 'qa'
+  ) => {
+    const ok = await copyToClipboard(text);
+    if (!ok) return;
+    setCopied({ messageId, action });
+    if (copyResetRef.current !== null) {
+      window.clearTimeout(copyResetRef.current);
+    }
+    copyResetRef.current = window.setTimeout(() => {
+      setCopied(null);
+      copyResetRef.current = null;
+    }, 1800);
+  }, [copyToClipboard]);
 
   const getPrecedingQuery = useCallback((msgIndex: number): string | null => {
     for (let i = msgIndex - 1; i >= 0; i--) {
@@ -413,35 +352,71 @@ ${cite.source_url ? `<p><a href="${cite.source_url}" target="_blank" rel="noopen
                   <div className="message-actions">
                     {msg.role === 'user' && (
                       <button
-                        className="action-btn copy-btn"
-                        onClick={() => copyToClipboard(msg.content)}
-                        title={t('chat.copy_query')}
+                        className={`action-btn copy-btn${
+                          copied?.messageId === msg.id &&
+                          copied.action === 'query' ? ' copied' : ''
+                        }`}
+                        onClick={() => { void copyWithFeedback(
+                          msg.content, msg.id, 'query'); }}
+                        title={
+                          copied?.messageId === msg.id &&
+                          copied.action === 'query'
+                            ? t('chat.copied')
+                            : t('chat.copy_query')
+                        }
                       >
-                        <Copy size={14} />
+                        {copied?.messageId === msg.id &&
+                        copied.action === 'query'
+                          ? <Check size={14} />
+                          : <Copy size={14} />}
                       </button>
                     )}
                     {msg.role === 'assistant' && (
                       <>
                         <button
-                          className="action-btn copy-btn"
-                          onClick={() => copyToClipboard(msg.content + formatCitations(msg.citations))}
-                          title={t('chat.copy_response')}
+                          className={`action-btn copy-btn${
+                            copied?.messageId === msg.id &&
+                            copied.action === 'response' ? ' copied' : ''
+                          }`}
+                          onClick={() => { void copyWithFeedback(
+                            msg.content + formatCitations(msg.citations),
+                            msg.id, 'response'); }}
+                          title={
+                            copied?.messageId === msg.id &&
+                            copied.action === 'response'
+                              ? t('chat.copied')
+                              : t('chat.copy_response')
+                          }
                         >
-                          <Copy size={14} />
+                          {copied?.messageId === msg.id &&
+                          copied.action === 'response'
+                            ? <Check size={14} />
+                            : <Copy size={14} />}
                         </button>
                         <button
-                          className="action-btn copy-btn"
+                          className={`action-btn copy-btn${
+                            copied?.messageId === msg.id &&
+                            copied.action === 'qa' ? ' copied' : ''
+                          }`}
                           onClick={() => {
                             const query = getPrecedingQuery(index);
                             const answer = msg.content + formatCitations(msg.citations);
                             const text = query
                               ? `Q: ${query}\n\nA: ${answer}`
                               : answer;
-                            copyToClipboard(text);
+                            void copyWithFeedback(text, msg.id, 'qa');
                           }}
-                          title={t('chat.copy_qa')}
+                          title={
+                            copied?.messageId === msg.id &&
+                            copied.action === 'qa'
+                              ? t('chat.copied')
+                              : t('chat.copy_qa')
+                          }
                         >
-                          <ClipboardCopy size={14} />
+                          {copied?.messageId === msg.id &&
+                          copied.action === 'qa'
+                            ? <Check size={14} />
+                            : <ClipboardCopy size={14} />}
                         </button>
                         <button
                           className={`action-btn feedback-btn ${msg.feedback === 'positive' ? 'active positive' : ''}`}
@@ -502,41 +477,6 @@ ${cite.source_url ? `<p><a href="${cite.source_url}" target="_blank" rel="noopen
               <span className="candidate-panel-id">
                 {t('chat.candidate_session')}: {candidateSessionId?.slice(0, 12)}…
               </span>
-              {candidateJobId ? (
-                <div className="candidate-panel-status">
-                  <span
-                    className={
-                      candidateJobState &&
-                      (candidateJobState.toUpperCase() === 'FAILED' ||
-                        candidateJobState.toUpperCase() === 'CANCELLED' ||
-                        candidateJobState.toUpperCase() === 'EXPIRED' ||
-                        candidateJobState.toUpperCase() === 'LOST')
-                        ? 'candidate-job-state candidate-job-state--failed'
-                        : 'candidate-job-state'
-                    }
-                  >
-                    {t('chat.candidate_job_state')}: {candidateJobState ?? '…'}
-                  </span>
-                  {candidateJobError ? (
-                    <span
-                      className="candidate-job-error"
-                      title={candidateJobError}
-                    >
-                      {candidateJobError}
-                    </span>
-                  ) : null}
-                </div>
-              ) : (
-                <button
-                  className="candidate-panel-qualify"
-                  onClick={handleStartQualification}
-                  disabled={isStartingQualification}
-                >
-                  {isStartingQualification
-                    ? t('chat.candidate_starting')
-                    : t('chat.candidate_qualify')}
-                </button>
-              )}
             </div>
           </div>
         )}

@@ -293,7 +293,8 @@
 }
 
 /* Keep visible when a feedback is already set */
-.message-actions:has(.active) {
+.message-actions:has(.active),
+.message-actions:has(.copied) {
   opacity: 1;
 }
 
@@ -314,6 +315,18 @@
   background-color: var(--color-surface-muted);
   color: var(--color-text);
   border-color: var(--color-border);
+}
+
+.copy-btn.copied {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.35);
+  background-color: rgba(34, 197, 94, 0.1);
+  animation: copyPop 0.25s ease-out;
+}
+
+@keyframes copyPop {
+  from { transform: scale(0.8); }
+  to { transform: scale(1); }
 }
 
 .feedback-btn.active.positive {
@@ -623,48 +636,6 @@
   color: var(--text-secondary, #9ca3af);
   font-family: monospace;
   font-size: 12px;
-}
-
-.candidate-panel-status {
-  color: var(--text-secondary, #9ca3af);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.candidate-job-state--failed {
-  color: #ef4444;
-  font-weight: 600;
-}
-
-.candidate-job-error {
-  color: #ef4444;
-  font-size: 11px;
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.candidate-panel-qualify {
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.candidate-panel-qualify:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.candidate-panel-qualify:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .composer-action .spin {
