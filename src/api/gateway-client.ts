@@ -167,7 +167,11 @@ class GatewayClient {
     // Agent mode (optional): when a chat session with candidate attachments
     // is active, pass session/attachment context so the Gateway can run the
     // bounded tool-calling agent loop. Plain chat otherwise.
-    agentContext?: { sessionId: string; attachmentIds?: string[] }
+    agentContext?: { sessionId: string; attachmentIds?: string[] },
+    // Per-session routing override: force this turn onto the Company
+    // Intelligence (agent-loop) plane. Omitted/false keeps the existing
+    // request body byte-identical.
+    forceDeterministic?: boolean
   ): Promise<Message> {
     const authHeaders = await this._authHeaders();
     const response = await fetch(`${this.baseUrl}/gateway/chat`, {
@@ -183,6 +187,7 @@ class GatewayClient {
           tools_enabled: true,
           attachment_ids: agentContext.attachmentIds ?? [],
         } : {}),
+        ...(forceDeterministic ? { force_deterministic: true } : {}),
       }),
       signal,
     });

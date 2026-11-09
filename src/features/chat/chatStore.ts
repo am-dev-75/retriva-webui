@@ -10,12 +10,19 @@ export interface ChatStoreState {
   messages: Message[];
   isLoading: boolean;
   abortController: AbortController | null;
+  /**
+   * Per-session routing override: force every new turn onto the Company
+   * Intelligence (agent-loop) plane. Defaults off and is never persisted;
+   * a page reload starts a fresh session with the override off.
+   */
+  forcedRouting: boolean;
 }
 
 let state: ChatStoreState = {
   messages: [],
   isLoading: false,
   abortController: null,
+  forcedRouting: false,
 };
 
 const listeners = new Set<() => void>();
@@ -46,6 +53,7 @@ export const chatStore = {
   startRequest(userMessage: Message): AbortController {
     const controller = new AbortController();
     publish({
+      ...state,
       messages: [...state.messages, userMessage],
       isLoading: true,
       abortController: controller,
@@ -58,6 +66,11 @@ export const chatStore = {
       ...state,
       messages: [...state.messages, message],
     });
+  },
+
+  setForcedRouting(enabled: boolean): void {
+    if (state.forcedRouting === enabled) return;
+    publish({ ...state, forcedRouting: enabled });
   },
 
   updateMessages(updater: (messages: Message[]) => Message[]): void {
@@ -78,6 +91,7 @@ export const chatStore = {
       messages: [],
       isLoading: false,
       abortController: null,
+      forcedRouting: false,
     });
   },
 };

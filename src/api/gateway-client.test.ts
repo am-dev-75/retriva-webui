@@ -36,4 +36,39 @@ describe('GatewayClient auth-disabled requests', () => {
     const headers = init?.headers as Record<string, string>;
     expect(headers.Authorization).toBeUndefined();
   });
+
+  it('adds force_deterministic only when the override is enabled', async () => {
+    const message = {
+      id: 'msg-1',
+      role: 'assistant',
+      content: 'ok',
+      timestamp: new Date().toISOString(),
+      citations: [],
+    };
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () => new Response(JSON.stringify(message), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await gatewayClient.sendChatMessage(
+      ['default'], 'Question', undefined, undefined, undefined,
+      undefined, true,
+    );
+    let body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(body.force_deterministic).toBe(true);
+
+    fetchMock.mockClear();
+    await gatewayClient.sendChatMessage(
+      ['default'], 'Question', undefined, undefined, undefined,
+      undefined, false,
+    );
+    body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect('force_deterministic' in body).toBe(false);
+  });
 });

@@ -32,7 +32,7 @@ import './Chat.css';
 export const ChatContainer: React.FC = () => {
   const { t } = useTranslation();
   const { selectedKbIds } = useKnowledgeBase();
-  const { messages, isLoading } = useSyncExternalStore(
+  const { messages, isLoading, forcedRouting } = useSyncExternalStore(
     chatStore.subscribe,
     chatStore.getSnapshot,
     chatStore.getSnapshot
@@ -101,7 +101,8 @@ export const ChatContainer: React.FC = () => {
         // runs the bounded tool-calling agent loop for this session.
         candidateSessionId && candidateAttachment
           ? { sessionId: candidateSessionId, attachmentIds: [candidateAttachment.attachment_id] }
-          : undefined
+          : undefined,
+        forcedRouting
       );
       chatStore.appendMessage({ ...response, feedback: null });
     } catch (error: unknown) {
@@ -277,6 +278,22 @@ export const ChatContainer: React.FC = () => {
         <div className="chat-header-info">
           <h1>{t('chat.title')}</h1>
           <p className="chat-header-subtitle">{t('chat.subtitle')}</p>
+        </div>
+        <div className="chat-header-actions">
+          <span className="routing-override-caption" aria-hidden="true">
+            {t('chat.routing_override_label')}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={forcedRouting}
+            aria-label={t('chat.routing_override_tooltip')}
+            title={t('chat.routing_override_tooltip')}
+            className={`routing-override${forcedRouting ? ' active' : ''}`}
+            onClick={() => chatStore.setForcedRouting(!forcedRouting)}
+          >
+            <span className="routing-override-knob" aria-hidden="true" />
+          </button>
         </div>
       </header>
 

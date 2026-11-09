@@ -131,4 +131,45 @@ describe('ChatContainer', () => {
     await waitFor(() => expect(copy).toHaveClass('copied'));
     expect(screen.getByTitle('chat.copied')).toBe(copy);
   });
+
+  it('defaults the forced-routing switch off', () => {
+    render(<ChatContainer />);
+    const toggle = screen.getByRole('switch', {
+      name: 'chat.routing_override_tooltip',
+    });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    expect(toggle).not.toHaveClass('active');
+  });
+
+  it('sends the forced-routing flag while the switch is on', async () => {
+    const { container } = render(<ChatContainer />);
+    fireEvent.click(screen.getByRole('switch', {
+      name: 'chat.routing_override_tooltip',
+    }));
+    fireEvent.change(screen.getByPlaceholderText('chat.placeholder'), {
+      target: { value: 'Question' },
+    });
+    fireEvent.click(container.querySelector('.btn-send') as HTMLButtonElement);
+
+    await waitFor(() => expect(sendChatMessage).toHaveBeenCalledTimes(1));
+    const args = sendChatMessage.mock.calls[0];
+    expect(args[6]).toBe(true);
+  });
+
+  it('stops sending the forced-routing flag after the switch is turned off', async () => {
+    const { container } = render(<ChatContainer />);
+    const toggle = screen.getByRole('switch', {
+      name: 'chat.routing_override_tooltip',
+    });
+    fireEvent.click(toggle);
+    fireEvent.click(toggle);
+    fireEvent.change(screen.getByPlaceholderText('chat.placeholder'), {
+      target: { value: 'Question' },
+    });
+    fireEvent.click(container.querySelector('.btn-send') as HTMLButtonElement);
+
+    await waitFor(() => expect(sendChatMessage).toHaveBeenCalledTimes(1));
+    const args = sendChatMessage.mock.calls[0];
+    expect(args[6]).toBe(false);
+  });
 });
